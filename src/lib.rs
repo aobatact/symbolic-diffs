@@ -28,6 +28,7 @@ impl DiffMarker for usize {
     }
 }
 
+#[repr(transparent)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
 
@@ -252,34 +253,6 @@ where
         )
     }
 }
-/*
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct DimMonomial<Dim: Unsigned, T, Degree: Integer>(T, PhantomData<Dim>, PhantomData<Degree>);
-
-impl<Dim, T, Degree, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>>
-    for DimMonomial<Dim, T, Degree>
-where
-    T: Clone + Zero + Mul<Output = T> + Pow<i8, Output = T> + From<i8>,
-    Dim: Unsigned + IsLess<N>,
-    Degree: Integer + Clone + Sub<B1> + Sub<P1>,
-    <Degree as Sub<P1>>::Output: Integer + Clone + Sub<B1>
-{
-    type Diff = DimMonomial<Dim, T, <Degree as Sub<P1>> :: Output>;
-    fn calc(&self, v: &GenericArray<T, N>) -> T {
-        if <Le<Dim, N> as Bit>::BOOL {
-            self.0.clone() * v[Dim::USIZE].clone().pow(<Degree as Integer>::I8)
-        } else {
-            T::zero()
-        }
-    }
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Diff
-    where
-        Dm: DiffMarker,
-    {
-        DimMonomial(self.0.clone() * T::from(<Degree as Integer>::I8),PhantomData,PhantomData)
-    }
-}
-*/
 
 #[cfg(test)]
 mod tests {
