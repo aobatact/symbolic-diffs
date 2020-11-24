@@ -7,8 +7,15 @@ pub use ops::*;
 pub trait Symbol<Out, In = Out>: Clone {
     type Diff: Symbol<Out, In>;
     fn calc(&self, value: &In) -> Out;
-    fn diff(&self) -> Self::Diff;
+    fn diff<Dm>(&self, dm: Dm) -> Self::Diff
+    where
+        Dm: DiffMarker;
 }
+
+pub trait DiffMarker: Copy {}
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct SingleDm;
+impl DiffMarker for SingleDm {}
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
@@ -28,8 +35,11 @@ where
     fn calc(&self, v: &In) -> Out {
         self.0.calc(v)
     }
-    fn diff(&self) -> <Self as Symbol<Out, In>>::Diff {
-        self.0.diff().into()
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        self.0.diff(dm).into()
     }
 }
 
@@ -102,7 +112,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ZeroSym;
 impl<Out, In> Symbol<Out, In> for ZeroSym
 where
@@ -112,12 +122,15 @@ where
     fn calc(&self, _v: &In) -> Out {
         Out::zero()
     }
-    fn diff(&self) -> <Self as Symbol<Out, In>>::Diff {
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
         ZeroSym
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Variable;
 impl<T> Symbol<T, T> for Variable
 where
@@ -127,7 +140,10 @@ where
     fn calc(&self, v: &T) -> T {
         v.clone()
     }
-    fn diff(&self) -> <Self as Symbol<T, T>>::Diff {
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
+    where
+        Dm: DiffMarker,
+    {
         ZeroSym
     }
 }

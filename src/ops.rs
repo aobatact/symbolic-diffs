@@ -2,7 +2,7 @@ use super::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 //use num_traits::Float;
 
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AddOp;
 impl BinaryOp for AddOp {}
 
@@ -19,12 +19,15 @@ where
     fn calc(&self, value: &In) -> Out {
         self.sym1.calc(value) + self.sym2.calc(value)
     }
-    fn diff(&self) -> <Self as Symbol<Out, In>>::Diff {
-        BinarySym::new(self.sym1.diff(), self.sym2.diff())
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        BinarySym::new(self.sym1.diff(dm), self.sym2.diff(dm))
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SubOp;
 impl BinaryOp for SubOp {}
 
@@ -41,12 +44,15 @@ where
     fn calc(&self, value: &In) -> Out {
         self.sym1.calc(value) - self.sym2.calc(value)
     }
-    fn diff(&self) -> <Self as Symbol<Out, In>>::Diff {
-        BinarySym::new(self.sym1.diff(), self.sym2.diff())
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        BinarySym::new(self.sym1.diff(dm), self.sym2.diff(dm))
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct MulOp;
 impl BinaryOp for MulOp {}
 pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
@@ -63,15 +69,18 @@ where
     fn calc(&self, value: &In) -> Out {
         self.sym1.calc(value) * self.sym2.calc(value)
     }
-    fn diff(&self) -> <Self as Symbol<Out, In>>::Diff {
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
         BinarySym::new(
-            BinarySym::new(self.sym1.diff(), self.sym2.clone()),
-            BinarySym::new(self.sym1.clone(), self.sym2.diff()),
+            BinarySym::new(self.sym1.diff(dm), self.sym2.clone()),
+            BinarySym::new(self.sym1.clone(), self.sym2.diff(dm)),
         )
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct DivOp;
 impl BinaryOp for DivOp {}
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
@@ -92,11 +101,14 @@ where
     fn calc(&self, value: &In) -> Out {
         self.sym1.calc(value) / self.sym2.calc(value)
     }
-    fn diff(&self) -> <Self as Symbol<Out, In>>::Diff {
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
         BinarySym::new(
             BinarySym::new(
-                BinarySym::new(self.sym1.diff(), self.sym2.clone()),
-                BinarySym::new(self.sym1.clone(), self.sym2.diff()),
+                BinarySym::new(self.sym1.diff(dm), self.sym2.clone()),
+                BinarySym::new(self.sym1.clone(), self.sym2.diff(dm)),
             ),
             BinarySym::new(self.sym2.clone(), self.sym2.clone()),
         )
