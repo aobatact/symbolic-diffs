@@ -1,5 +1,7 @@
 use core::marker::PhantomData;
+use generic_array::{ArrayLength, GenericArray};
 use num_traits::Zero;
+use typenum::marker_traits::Unsigned;
 
 mod ops;
 pub use ops::*;
@@ -12,10 +14,14 @@ pub trait Symbol<Out, In = Out>: Clone {
         Dm: DiffMarker;
 }
 
-pub trait DiffMarker: Copy {}
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub struct SingleDm;
-impl DiffMarker for SingleDm {}
+pub trait DiffMarker: Copy {
+    fn dim(self) -> usize;
+}
+impl DiffMarker for usize {
+    fn dim(self) -> usize {
+        self
+    }
+}
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
@@ -55,6 +61,22 @@ where
     sym: Sym,
     po: PhantomData<Out>,
     pi: PhantomData<In>,
+}
+
+impl<Op, Sym, Out, In> From<Sym> for UnarySym<Op, Sym, Out, In>
+where
+    Op: UnaryOp + Default,
+    Sym: Symbol<Out, In>,
+{
+    #[inline]
+    fn from(v: Sym) -> Self {
+        UnarySym {
+            op: Op::default(),
+            sym: v,
+            po: PhantomData,
+            pi: PhantomData,
+        }
+    }
 }
 
 pub trait BinaryOp {}
@@ -141,6 +163,31 @@ where
         v.clone()
     }
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        ZeroSym
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
+
+impl<Dim, T, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
+where
+    T: Clone + Zero,
+    Dim: Unsigned,
+{
+    type Diff = ZeroSym;
+    fn calc(&self, v: &GenericArray<T, N>) -> T {
+        let dim = Dim::USIZE;
+        if dim < v.len() {
+            v[dim].clone()
+        } else {
+            T::zero()
+        }
+    }
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Diff
     where
         Dm: DiffMarker,
     {
