@@ -1,14 +1,19 @@
 use core::marker::PhantomData;
+use core::ops::{Mul, Sub};
 use generic_array::{ArrayLength, GenericArray};
-use num_traits::Zero;
-use typenum::marker_traits::Unsigned;
+use num_traits::{One, Pow, Zero};
+use typenum::{
+    marker_traits::{Bit, Unsigned},
+    operator_aliases::Le,
+    type_operators::IsLess,
+};
 
 mod ops;
 pub use ops::*;
 
 pub trait Symbol<Out, In = Out>: Clone {
     type Diff: Symbol<Out, In>;
-    fn calc(&self, value: &In) -> Out;
+    fn calc(&self, value: In) -> Out;
     fn diff<Dm>(&self, dm: Dm) -> Self::Diff
     where
         Dm: DiffMarker;
@@ -23,8 +28,16 @@ impl DiffMarker for usize {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
+
+impl<S, O, I> Copy for Expr<S, O, I>
+where
+    S: Copy,
+    O: Clone,
+    I: Clone,
+{
+}
 
 impl<Sym, O, I> From<Sym> for Expr<Sym, O, I> {
     #[inline]
@@ -38,7 +51,7 @@ where
     Sym: Symbol<Out, In>,
 {
     type Diff = Expr<Sym::Diff, Out, In>;
-    fn calc(&self, v: &In) -> Out {
+    fn calc(&self, v: In) -> Out {
         self.0.calc(v)
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
@@ -141,10 +154,26 @@ where
     Out: Zero,
 {
     type Diff = ZeroSym;
-    fn calc(&self, _v: &In) -> Out {
+    fn calc(&self, _v: In) -> Out {
         Out::zero()
     }
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        ZeroSym
+    }
+}
+
+impl<T> Symbol<T, T> for T
+where
+    T: Zero + Clone,
+{
+    type Diff = ZeroSym;
+    fn calc(&self, _v: T) -> T {
+        self.clone()
+    }
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
     where
         Dm: DiffMarker,
     {
@@ -159,7 +188,7 @@ where
     T: Clone + Zero,
 {
     type Diff = ZeroSym;
-    fn calc(&self, v: &T) -> T {
+    fn calc(&self, v: T) -> T {
         v.clone()
     }
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
@@ -173,16 +202,72 @@ where
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
 
-impl<Dim, T, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
+impl<Dim, T, N: ArrayLength<T>> Symbol<T, &GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero,
-    Dim: Unsigned,
+    Dim: Unsigned + IsLess<N>,
 {
     type Diff = ZeroSym;
     fn calc(&self, v: &GenericArray<T, N>) -> T {
-        let dim = Dim::USIZE;
-        if dim < v.len() {
-            v[dim].clone()
+        if <Le<Dim, N> as Bit>::BOOL {
+            v[Dim::USIZE].clone()
+        } else {
+            T::zero()
+        }
+    }
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, &GenericArray<T, N>>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        ZeroSym
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct DimMonomial<Dim: Unsigned, Coefficient, Degree>(Coefficient, Degree, PhantomData<Dim>);
+
+impl<Dim, T, Degree, N: ArrayLength<T>> Symbol<T, &GenericArray<T, N>>
+    for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree>,
+    Dim: Unsigned + IsLess<N>,
+    Degree: Clone + Sub<Output = Degree> + One,
+{
+    type Diff = DimMonomial<Dim, T, Degree>;
+    fn calc(&self, v: &GenericArray<T, N>) -> T {
+        if <Le<Dim, N> as Bit>::BOOL {
+            self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+        } else {
+            T::zero()
+        }
+    }
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, &GenericArray<T, N>>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        DimMonomial(
+            self.0.clone() * T::from(self.1.clone()),
+            self.1.clone() - Degree::one(),
+            PhantomData,
+        )
+    }
+}
+/*
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct DimMonomial<Dim: Unsigned, T, Degree: Integer>(T, PhantomData<Dim>, PhantomData<Degree>);
+
+impl<Dim, T, Degree, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>>
+    for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + Mul<Output = T> + Pow<i8, Output = T> + From<i8>,
+    Dim: Unsigned + IsLess<N>,
+    Degree: Integer + Clone + Sub<B1> + Sub<P1>,
+    <Degree as Sub<P1>>::Output: Integer + Clone + Sub<B1>
+{
+    type Diff = DimMonomial<Dim, T, <Degree as Sub<P1>> :: Output>;
+    fn calc(&self, v: &GenericArray<T, N>) -> T {
+        if <Le<Dim, N> as Bit>::BOOL {
+            self.0.clone() * v[Dim::USIZE].clone().pow(<Degree as Integer>::I8)
         } else {
             T::zero()
         }
@@ -191,9 +276,10 @@ where
     where
         Dm: DiffMarker,
     {
-        ZeroSym
+        DimMonomial(self.0.clone() * T::from(<Degree as Integer>::I8),PhantomData,PhantomData)
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
