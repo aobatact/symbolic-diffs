@@ -31,7 +31,7 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SubOp;
 impl BinaryOp for SubOp {}
-/// Represent [`-`](`core::ops::Sum`) Symbol
+/// Represent [`-`](`core::ops::Sub`) Symbol
 pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>

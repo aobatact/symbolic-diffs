@@ -62,7 +62,7 @@ impl<U: Unsigned, B: Bit> DiffMarker for UInt<U, B> {
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct Expr<Sym: Symbol<Out, In>, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
 
 impl<Sym, O, I> Expr<Sym, O, I>
@@ -74,11 +74,16 @@ where
     }
 }
 
+impl<S, O, I> Clone for Expr<S, O, I>
+where
+    S: Symbol<O, I>,
+{
+    fn clone(&self) -> Self { self.0.clone().into() }
+}
+
 impl<S, O, I> Copy for Expr<S, O, I>
 where
     S: Copy + Symbol<O, I>,
-    O: Clone,
-    I: Clone,
 {
 }
 
