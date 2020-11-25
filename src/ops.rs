@@ -126,6 +126,7 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
+            O: Add<Output = O> + Sub<Output = O> + Mul<Output = O> + Div<Output = O>,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {
