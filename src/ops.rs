@@ -1,6 +1,6 @@
 use super::*;
-use core::ops::{Add, Div, Mul, Sub}; //Neg
-                                     //use num_traits::Float;
+use core::ops::{Add, Div, Mul, Neg, Sub}; //
+                                          //use num_traits::Float;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AddOp;
@@ -121,12 +121,12 @@ where
 }
 
 macro_rules! op_expr {
-    ($t:ident,$tsym:ident,$op:ident) => {
+    ($t:ident,$tsym:ident,$op:ident, [$($cond:ident),* $(,)*] ) => {
         impl<L, R, O, I> $t<R> for Expr<L, O, I>
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: Add<Output = O> + Sub<Output = O> + Mul<Output = O> + Div<Output = O>,
+            O: $( $cond<Output = O> + )* $t<Output = O>,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {
@@ -136,10 +136,43 @@ macro_rules! op_expr {
     };
 }
 
-op_expr!(Add, AddSym, add);
-op_expr!(Sub, SubSym, sub);
-op_expr!(Mul, MulSym, mul);
-op_expr!(Div, DivSym, div);
+op_expr!(Add, AddSym, add, []);
+op_expr!(Sub, SubSym, sub, []);
+op_expr!(Mul, MulSym, mul, [Add]);
+op_expr!(Div, DivSym, div, [Add, Sub, Mul]);
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct NegOp;
+impl UnaryOp for NegOp {}
+pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
+
+impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Neg<Output = Out>,
+{
+    type Derivative = NegSym<Sym::Derivative, Out, In>;
+    fn calc_ref(&self, value: &In) -> Out {
+        -self.sym.calc_ref(value)
+    }
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    where
+        Dm: DiffMarker,
+    {
+        self.sym.diff(dm).into()
+    }
+}
+
+impl<S, O, I> Neg for Expr<S, O, I>
+where
+    S: Symbol<O, I>,
+    O: Neg<Output = O>,
+{
+    type Output = Expr<NegSym<S, O, I>, O, I>;
+    fn neg(self) -> Self::Output {
+        NegSym::from(self.0).into()
+    }
+}
 
 #[cfg(test)]
 mod tests {

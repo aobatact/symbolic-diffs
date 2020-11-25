@@ -282,20 +282,18 @@ where
 impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
     type Derivative = Option<Sym::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
-        if let Some(sym) = self {
-            sym.calc_ref(value)
-        } else {
-            O::zero()
+        match self {
+            Some(sym) => sym.calc_ref(value),
+            None => O::zero(),
         }
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
     where
         Dm: DiffMarker,
     {
-        if let Some(sym) = self {
-            Some(sym.diff(dm))
-        } else {
-            None
+        match self {
+            Some(sym) => Some(sym.diff(dm)),
+            None => None,
         }
     }
 }
