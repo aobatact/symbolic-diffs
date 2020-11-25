@@ -6,6 +6,7 @@ use typenum::{
     marker_traits::{Bit, Unsigned},
     operator_aliases::Le,
     type_operators::IsLess,
+    uint::{UInt, UTerm},
 };
 
 mod ops;
@@ -30,9 +31,22 @@ impl<Sym: Symbol<O, I>, O, I> SymbolEx<O, I> for Sym {}
 pub trait DiffMarker: Copy {
     fn dim(self) -> usize;
 }
+
 impl DiffMarker for usize {
     fn dim(self) -> usize {
         self
+    }
+}
+
+impl DiffMarker for UTerm {
+    fn dim(self) -> usize {
+        <Self as Unsigned>::USIZE
+    }
+}
+
+impl<U: Unsigned, B: Bit> DiffMarker for UInt<U, B> {
+    fn dim(self) -> usize {
+        <Self as Unsigned>::USIZE
     }
 }
 
@@ -40,9 +54,9 @@ impl DiffMarker for usize {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
 
-impl<Sym: Clone, O, I> Expr<Sym, O, I> {
-    pub fn inner(&self) -> Sym {
-        self.0.clone()
+impl<Sym, O, I> Expr<Sym, O, I> {
+    pub fn inner(&self) -> &Sym {
+        &self.0
     }
 }
 
@@ -66,9 +80,11 @@ where
     Sym: Symbol<Out, In>,
 {
     type Diff = Expr<Sym::Diff, Out, In>;
+    #[inline]
     fn calc_ref(&self, value: &In) -> Out {
         self.0.calc_ref(value)
     }
+    #[inline]
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
     where
         Dm: DiffMarker,
@@ -224,6 +240,25 @@ impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
             Some(sym.diff(dm))
         } else {
             None
+        }
+    }
+}
+
+impl<O: Zero, I, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result<Sym1, Sym2> {
+    type Diff = Result<Sym1::Diff, Sym2::Diff>;
+    fn calc_ref(&self, value: &I) -> O {
+        match self {
+            Ok(sym) => sym.calc_ref(value),
+            Err(sym) => sym.calc_ref(value),
+        }
+    }
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        match self {
+            Ok(sym) => Ok(sym.diff(dm)),
+            Err(sym) => Err(sym.diff(dm)),
         }
     }
 }
