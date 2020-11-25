@@ -2,10 +2,11 @@ use super::*;
 use core::ops::{Add, Div, Mul, Neg, Sub}; //
                                           //use num_traits::Float;
 
+/// [`BinaryOp`](`crate::BinaryOp`) marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AddOp;
 impl BinaryOp for AddOp {}
-
+/// Represent [`+`](`core::ops::Add`) Symbol
 pub type AddSym<Sym1, Sym2, Out, In> = BinarySym<AddOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
@@ -26,10 +27,11 @@ where
     }
 }
 
+/// [`BinaryOp`](`crate::BinaryOp`) marker for [`-`](`core::ops::Sub`) with [`SubSym`](`crate::ops::SubSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SubOp;
 impl BinaryOp for SubOp {}
-
+/// Represent [`-`](`core::ops::Sum`) Symbol
 pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
@@ -50,9 +52,11 @@ where
     }
 }
 
+/// [`BinaryOp`](`crate::BinaryOp`) marker for [`*`](`core::ops::Mul`) with [`MulSym`](`crate::ops::MulSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct MulOp;
 impl BinaryOp for MulOp {}
+/// Represent [`*`](`core::ops::Mul`) Symbol
 pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
@@ -81,9 +85,11 @@ where
     }
 }
 
+/// [`BinaryOp`](`crate::BinaryOp`) marker for [`/`](`core::ops::Div`) with [`DivSym`](`crate::ops::DivSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct DivOp;
 impl BinaryOp for DivOp {}
+/// Represent [`/`](`core::ops::Div`) Symbol
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
@@ -141,9 +147,11 @@ op_expr!(Sub, SubSym, sub, []);
 op_expr!(Mul, MulSym, mul, [Add]);
 op_expr!(Div, DivSym, div, [Add, Sub, Mul]);
 
+/// [`UnaryOp`](`crate::UnaryOp`) marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct NegOp;
 impl UnaryOp for NegOp {}
+/// Represent Unary[`-`](`core::ops::Neg`) Symbol
 pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
 
 impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
