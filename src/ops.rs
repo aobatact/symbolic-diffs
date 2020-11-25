@@ -12,14 +12,13 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Clone,
-    In: Clone,
+    Out: Add<Output = Out>,
 {
-    type Diff = AddSym<Sym1::Diff, Sym2::Diff, Out, In>;
+    type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -37,14 +36,13 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + Clone,
-    In: Clone,
+    Out: Sub<Output = Out>,
 {
-    type Diff = SubSym<Sym1::Diff, Sym2::Diff, Out, In>;
+    type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -61,15 +59,18 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone,
-    In: Clone,
+    Out: Add<Output = Out> + Mul<Output = Out>,
 {
-    type Diff =
-        AddSym<MulSym<Sym1::Diff, Sym2, Out, In>, MulSym<Sym1, Sym2::Diff, Out, In>, Out, In>;
+    type Derivative = AddSym<
+        MulSym<Sym1::Derivative, Sym2, Out, In>,
+        MulSym<Sym1, Sym2::Derivative, Out, In>,
+        Out,
+        In,
+    >;
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -89,11 +90,15 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out> + Clone,
-    In: Clone,
+    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out>,
 {
-    type Diff = DivSym<
-        SubSym<MulSym<Sym1::Diff, Sym2, Out, In>, MulSym<Sym1, Sym2::Diff, Out, In>, Out, In>,
+    type Derivative = DivSym<
+        SubSym<
+            MulSym<Sym1::Derivative, Sym2, Out, In>,
+            MulSym<Sym1, Sym2::Derivative, Out, In>,
+            Out,
+            In,
+        >,
         MulSym<Sym2, Sym2, Out, In>,
         Out,
         In,
@@ -101,7 +106,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) / self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {

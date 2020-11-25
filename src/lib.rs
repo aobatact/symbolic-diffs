@@ -9,18 +9,27 @@ use typenum::{
     uint::{UInt, UTerm},
 };
 
-mod ops;
-pub use ops::*;
+///Set of basic numerical operations
+pub mod ops;
 
+///Expression symbol for calculating and differentiation.
 pub trait Symbol<Out, In = Out>: Clone {
-    type Diff: Symbol<Out, In>;
+    type Derivative: Symbol<Out, In>;
+    /// Calculate the value of this expression.
+    /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
     fn calc_ref(&self, value: &In) -> Out;
-    fn diff<Dm>(&self, dm: Dm) -> Self::Diff
+    /// Get the partial derivative of this expression.
+    /// Dm is the marker of which variable for differentiation.
+    /// Use usize 1 or [`U1`](`typenum::U1`) if there is only one variable.
+    fn diff<Dm>(&self, dm: Dm) -> Self::Derivative
     where
         Dm: DiffMarker;
 }
 
+///Extention for [`Symbol`](`crate::Symbol`).
 pub trait SymbolEx<Out, In>: Symbol<Out, In> {
+    /// Shortcut for calculating owned value from [`calc_ref`](`crate::Symbol::calc_ref`).
+    #[inline]
     fn calc(&self, value: In) -> Out {
         self.calc_ref(&value)
     }
@@ -28,6 +37,7 @@ pub trait SymbolEx<Out, In>: Symbol<Out, In> {
 
 impl<Sym: Symbol<O, I>, O, I> SymbolEx<O, I> for Sym {}
 
+///Marker for the dimention of partial differntiation. See [`diff`](`crate::Symbol::diff`)
 pub trait DiffMarker: Copy {
     fn dim(self) -> usize;
 }
@@ -50,6 +60,7 @@ impl<U: Unsigned, B: Bit> DiffMarker for UInt<U, B> {
     }
 }
 
+///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
@@ -79,13 +90,13 @@ impl<Sym, Out: Clone, In: Clone> Symbol<Out, In> for Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
 {
-    type Diff = Expr<Sym::Diff, Out, In>;
+    type Derivative = Expr<Sym::Derivative, Out, In>;
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
         self.0.calc_ref(value)
     }
     #[inline]
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -93,9 +104,11 @@ where
     }
 }
 
+/// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
 pub trait UnaryOp {}
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// Symbol represent Unary Operation.
+#[derive(Debug, PartialEq, Eq)]
 pub struct UnarySym<Op, Sym, Out, In = Out>
 where
     Op: UnaryOp,
@@ -105,6 +118,21 @@ where
     sym: Sym,
     po: PhantomData<Out>,
     pi: PhantomData<In>,
+}
+
+impl<Op, Sym, Out, In> Clone for UnarySym<Op, Sym, Out, In>
+where
+    Op: UnaryOp + Clone,
+    Sym: Symbol<Out, In> + Clone,
+{
+    fn clone(&self) -> Self {
+        UnarySym {
+            op: self.op.clone(),
+            sym: self.sym.clone(),
+            po: PhantomData,
+            pi: PhantomData,
+        }
+    }
 }
 
 impl<Op, Sym, Out, In> From<Sym> for UnarySym<Op, Sym, Out, In>
@@ -123,9 +151,11 @@ where
     }
 }
 
+/// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
 pub trait BinaryOp {}
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// Symbol represent Binary Operation.
+#[derive(Debug, PartialEq, Eq)]
 pub struct BinarySym<Op, Sym1, Sym2, Out, In = Out>
 where
     Op: BinaryOp,
@@ -166,6 +196,17 @@ impl<Op: BinaryOp, Sym1: Symbol<Out, In>, Sym2: Symbol<Out, In>, Out, In>
     }
 }
 
+impl<Op, Sym1, Sym2, Out, In> Clone for BinarySym<Op, Sym1, Sym2, Out, In>
+where
+    Op: BinaryOp + Clone,
+    Sym1: Symbol<Out, In> + Clone,
+    Sym2: Symbol<Out, In> + Clone,
+{
+    fn clone(&self) -> Self {
+        Self::new_with_op(self.op.clone(), self.sym1.clone(), self.sym2.clone())
+    }
+}
+
 impl<Op, Sym1, Sym2, Out, In> From<(Sym1, Sym2)> for BinarySym<Op, Sym1, Sym2, Out, In>
 where
     Op: BinaryOp + Default,
@@ -178,17 +219,23 @@ where
     }
 }
 
+/// Symbol represent Zero.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ZeroSym;
 impl<Out, In> Symbol<Out, In> for ZeroSym
 where
     Out: Zero,
 {
-    type Diff = ZeroSym;
+    type Derivative = ZeroSym;
+    ///Returns zero.
+    #[inline]
     fn calc_ref(&self, _value: &In) -> Out {
         Out::zero()
     }
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Diff
+
+    ///Returns Zero Symbol.
+    #[inline]
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -196,17 +243,20 @@ where
     }
 }
 
+///Symbol represent an constant value.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Const<T>(T);
-impl<T> Symbol<T, T> for Const<T>
+impl<Out, In> Symbol<Out, In> for Const<Out>
 where
-    T: Zero + Clone,
+    Out: Zero + Clone,
 {
-    type Diff = ZeroSym;
-    fn calc_ref(&self, _value: &T) -> T {
+    type Derivative = ZeroSym;
+    /// returns self.
+    fn calc_ref(&self, _value: &In) -> Out {
         self.0.clone()
     }
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
+    /// returns [`ZeroSym`](`crate::ZeroSym`)
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -224,7 +274,7 @@ where
 }
 
 impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
-    type Diff = Option<Sym::Diff>;
+    type Derivative = Option<Sym::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
         if let Some(sym) = self {
             sym.calc_ref(value)
@@ -232,7 +282,7 @@ impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
             O::zero()
         }
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -245,14 +295,14 @@ impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
 }
 
 impl<O: Zero, I, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result<Sym1, Sym2> {
-    type Diff = Result<Sym1::Diff, Sym2::Diff>;
+    type Derivative = Result<Sym1::Derivative, Sym2::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
         match self {
             Ok(sym) => sym.calc_ref(value),
             Err(sym) => sym.calc_ref(value),
         }
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -263,17 +313,20 @@ impl<O: Zero, I, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result
     }
 }
 
+///Represents an single variable.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Variable;
 impl<T> Symbol<T, T> for Variable
 where
     T: Clone + Zero,
 {
-    type Diff = ZeroSym;
+    type Derivative = ZeroSym;
+    /// Returns cloned "value"
     fn calc_ref(&self, value: &T) -> T {
         value.clone()
     }
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
+    /// returns [`ZeroSym`](`crate::ZeroSym`)
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -281,6 +334,7 @@ where
     }
 }
 
+///Represents an single variable in mulit variable context.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
 
@@ -289,7 +343,7 @@ where
     T: Clone + Zero,
     Dim: Unsigned + IsLess<N>,
 {
-    type Diff = ZeroSym;
+    type Derivative = ZeroSym;
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         if <Le<Dim, N> as Bit>::BOOL {
             v[Dim::USIZE].clone()
@@ -297,7 +351,8 @@ where
             T::zero()
         }
     }
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Diff
+    /// returns [`ZeroSym`](`crate::ZeroSym`)
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -305,6 +360,7 @@ where
     }
 }
 
+///Represents an monomial with coefficient and degree in mulit variable context.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimMonomial<Dim: Unsigned, Coefficient, Degree>(Coefficient, Degree, PhantomData<Dim>);
 
@@ -315,15 +371,17 @@ where
     Dim: Unsigned + IsLess<N>,
     Degree: Clone + Sub<Output = Degree> + One,
 {
-    type Diff = DimMonomial<Dim, T, Degree>;
+    type Derivative = DimMonomial<Dim, T, Degree>;
+    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        if <Le<Dim, N> as Bit>::BOOL {
+        if <Le<Dim, N> as Bit>::BOOL && !self.0.is_zero() {
             self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
         } else {
             T::zero()
         }
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Diff
+    /// Differentiate if `dm == dim`, else return zeroed DimMonomial
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
     {
