@@ -16,8 +16,8 @@ where
     In: Clone,
 {
     type Diff = AddSym<Sym1::Diff, Sym2::Diff, Out, In>;
-    fn calc(&self, value: In) -> Out {
-        self.sym1.calc(value.clone()) + self.sym2.calc(value)
+    fn calc(&self, value: &In) -> Out {
+        self.sym1.calc(value) + self.sym2.calc(value)
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
     where
@@ -41,8 +41,8 @@ where
     In: Clone,
 {
     type Diff = SubSym<Sym1::Diff, Sym2::Diff, Out, In>;
-    fn calc(&self, value: In) -> Out {
-        self.sym1.calc(value.clone()) - self.sym2.calc(value)
+    fn calc(&self, value: &In) -> Out {
+        self.sym1.calc(value) - self.sym2.calc(value)
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
     where
@@ -66,8 +66,8 @@ where
 {
     type Diff =
         AddSym<MulSym<Sym1::Diff, Sym2, Out, In>, MulSym<Sym1, Sym2::Diff, Out, In>, Out, In>;
-    fn calc(&self, value: In) -> Out {
-        self.sym1.calc(value.clone()) * self.sym2.calc(value)
+    fn calc(&self, value: &In) -> Out {
+        self.sym1.calc(value) * self.sym2.calc(value)
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
     where
@@ -98,8 +98,8 @@ where
         Out,
         In,
     >;
-    fn calc(&self, value: In) -> Out {
-        self.sym1.calc(value.clone()) / self.sym2.calc(value)
+    fn calc(&self, value: &In) -> Out {
+        self.sym1.calc(value) / self.sym2.calc(value)
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
     where
@@ -141,13 +141,13 @@ mod tests {
     #[test]
     fn add() {
         let x: Expr<Variable, isize> = Variable.into();
-        assert_eq!(2, x.calc(2));
+        assert_eq!(2, x.calc(&2));
         let _x_m2 = x.clone() + x.clone();
         let x_m2 = x + x;
-        assert_eq!(4, x_m2.calc(2));
-        assert_eq!(6, x_m2.calc(3));
+        assert_eq!(4, x_m2.calc(&2));
+        assert_eq!(6, x_m2.calc(&3));
         let x_2 = x + 2.into();
-        assert_eq!(4, x_2.calc(2));
-        assert_eq!(5, x_2.calc(3));
+        assert_eq!(4, x_2.calc(&2));
+        assert_eq!(5, x_2.calc(&3));
     }
 }
