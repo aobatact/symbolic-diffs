@@ -14,6 +14,7 @@ use typenum::{
 
 ///Set of basic numerical operations
 pub mod ops;
+pub mod float_ops;
 
 ///Expression symbol for calculating and differentiation.
 pub trait Symbol<Out, In: ?Sized>: Clone {
@@ -76,7 +77,11 @@ impl<Sym, O, I> Expr<Sym, O, I>
 where
     Sym: Symbol<O, I>,
 {
-    pub fn inner(&self) -> &Sym {
+    pub fn inner(self) -> Sym {
+        self.0
+    }
+
+    pub fn inner_borrow(&self) -> &Sym {
         &self.0
     }
 }
@@ -515,7 +520,7 @@ where
     /// assert_eq!(8,x.diff(U0::new()).calc(v));
     /// assert_eq!(0,x.diff(U1::new()).calc(v));
     /// //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
-    /// let y = x.inner().change_dim::<U1>().to_expr();
+    /// let y = x.inner_borrow().change_dim::<U1>().to_expr();
     /// assert_eq!(0,y.diff(U0::new()).calc(v));
     /// assert_eq!(12,y.diff(U1::new()).calc(v));
     /// ```
