@@ -13,11 +13,19 @@ pub use ops::*;
 
 pub trait Symbol<Out, In = Out>: Clone {
     type Diff: Symbol<Out, In>;
-    fn calc(&self, value: &In) -> Out;
+    fn calc_ref(&self, value: &In) -> Out;
     fn diff<Dm>(&self, dm: Dm) -> Self::Diff
     where
         Dm: DiffMarker;
 }
+
+pub trait SymbolEx<Out, In>: Symbol<Out, In> {
+    fn calc(&self, value: In) -> Out {
+        self.calc_ref(&value)
+    }
+}
+
+impl<Sym: Symbol<O, I>, O, I> SymbolEx<O, I> for Sym {}
 
 pub trait DiffMarker: Copy {
     fn dim(self) -> usize;
@@ -31,6 +39,12 @@ impl DiffMarker for usize {
 #[repr(transparent)]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Expr<Sym, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
+
+impl<Sym: Clone, O, I> Expr<Sym, O, I> {
+    pub fn inner(&self) -> Sym {
+        self.0.clone()
+    }
+}
 
 impl<S, O, I> Copy for Expr<S, O, I>
 where
@@ -52,8 +66,8 @@ where
     Sym: Symbol<Out, In>,
 {
     type Diff = Expr<Sym::Diff, Out, In>;
-    fn calc(&self, value: &In) -> Out {
-        self.0.calc(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.0.calc_ref(value)
     }
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Diff
     where
@@ -155,7 +169,7 @@ where
     Out: Zero,
 {
     type Diff = ZeroSym;
-    fn calc(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         Out::zero()
     }
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Diff
@@ -166,19 +180,51 @@ where
     }
 }
 
-impl<T> Symbol<T, T> for T
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct Const<T>(T);
+impl<T> Symbol<T, T> for Const<T>
 where
     T: Zero + Clone,
 {
     type Diff = ZeroSym;
-    fn calc(&self, _value: &T) -> T {
-        self.clone()
+    fn calc_ref(&self, _value: &T) -> T {
+        self.0.clone()
     }
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
     where
         Dm: DiffMarker,
     {
         ZeroSym
+    }
+}
+
+impl<T> From<T> for Const<T>
+where
+    T: Zero + Clone,
+{
+    fn from(v: T) -> Const<T> {
+        Const(v)
+    }
+}
+
+impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
+    type Diff = Option<Sym::Diff>;
+    fn calc_ref(&self, value: &I) -> O {
+        if let Some(sym) = self {
+            sym.calc_ref(value)
+        } else {
+            O::zero()
+        }
+    }
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Diff
+    where
+        Dm: DiffMarker,
+    {
+        if let Some(sym) = self {
+            Some(sym.diff(dm))
+        } else {
+            None
+        }
     }
 }
 
@@ -189,7 +235,7 @@ where
     T: Clone + Zero,
 {
     type Diff = ZeroSym;
-    fn calc(&self, value: &T) -> T {
+    fn calc_ref(&self, value: &T) -> T {
         value.clone()
     }
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Diff
@@ -209,7 +255,7 @@ where
     Dim: Unsigned + IsLess<N>,
 {
     type Diff = ZeroSym;
-    fn calc(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         if <Le<Dim, N> as Bit>::BOOL {
             v[Dim::USIZE].clone()
         } else {
@@ -235,22 +281,26 @@ where
     Degree: Clone + Sub<Output = Degree> + One,
 {
     type Diff = DimMonomial<Dim, T, Degree>;
-    fn calc(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         if <Le<Dim, N> as Bit>::BOOL {
             self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
         } else {
             T::zero()
         }
     }
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Diff
+    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Diff
     where
         Dm: DiffMarker,
     {
-        DimMonomial(
-            self.0.clone() * T::from(self.1.clone()),
-            self.1.clone() - Degree::one(),
-            PhantomData,
-        )
+        if dm.dim() == Dim::USIZE {
+            DimMonomial(
+                self.0.clone() * T::from(self.1.clone()),
+                self.1.clone() - Degree::one(),
+                PhantomData,
+            )
+        } else {
+            DimMonomial(T::zero(), Degree::one(), PhantomData)
+        }
     }
 }
 
