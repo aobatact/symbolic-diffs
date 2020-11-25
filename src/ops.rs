@@ -184,11 +184,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::*;
     #[test]
     fn add() {
         let x: Expr<Variable, isize> = Variable.into();
         assert_eq!(2, x.calc(2));
+        assert_eq!(0, x.diff(1).calc(2));
         let _x_m2 = x.clone() + x.clone();
         let x_m2 = x + x;
         assert_eq!(4, x_m2.calc(2));

@@ -1,5 +1,8 @@
-use core::marker::PhantomData;
-use core::ops::{Mul, Sub};
+use core::{
+    borrow::Borrow,
+    marker::PhantomData,
+    ops::{Mul, Sub},
+};
 use generic_array::{ArrayLength, GenericArray};
 use num_traits::{One, Pow, Zero};
 use typenum::{
@@ -13,7 +16,7 @@ use typenum::{
 pub mod ops;
 
 ///Expression symbol for calculating and differentiation.
-pub trait Symbol<Out, In = Out>: Clone {
+pub trait Symbol<Out, In>: Clone {
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
@@ -32,6 +35,10 @@ pub trait SymbolEx<Out, In>: Symbol<Out, In> {
     #[inline]
     fn calc(&self, value: In) -> Out {
         self.calc_ref(&value)
+    }
+    ///Wrap this symbol to [`Expr`](`crate::Expr`)
+    fn to_expr(self) -> Expr<Self, Out, In> {
+        self.into()
     }
 }
 
@@ -78,14 +85,12 @@ impl<S, O, I> Clone for Expr<S, O, I>
 where
     S: Symbol<O, I>,
 {
-    fn clone(&self) -> Self { self.0.clone().into() }
+    fn clone(&self) -> Self {
+        self.0.clone().into()
+    }
 }
 
-impl<S, O, I> Copy for Expr<S, O, I>
-where
-    S: Copy + Symbol<O, I>,
-{
-}
+impl<S, O, I> Copy for Expr<S, O, I> where S: Copy + Symbol<O, I> {}
 
 impl<Sym, O, I> From<Sym> for Expr<Sym, O, I>
 where
@@ -118,7 +123,7 @@ where
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
 pub trait UnaryOp {}
 
-/// Symbol represent Unary Operation.
+/// [`Symbol`](`crate::Symbol`) represent Unary Operation.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnarySym<Op, Sym, Out, In = Out>
 where
@@ -165,7 +170,7 @@ where
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
 pub trait BinaryOp {}
 
-/// Symbol represent Binary Operation.
+/// [`Symbol`](`crate::Symbol`) represent Binary Operation.
 #[derive(Debug, PartialEq, Eq)]
 pub struct BinarySym<Op, Sym1, Sym2, Out, In = Out>
 where
@@ -230,7 +235,7 @@ where
     }
 }
 
-/// Symbol represent Zero.
+/// [`Symbol`](`crate::Symbol`) represent Zero.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ZeroSym;
 impl<Out, In> Symbol<Out, In> for ZeroSym
@@ -254,7 +259,7 @@ where
     }
 }
 
-///Symbol represent an constant value.
+///[`Symbol`](`crate::Symbol`) represent an constant value.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Const<T>(T);
 impl<Out, In> Symbol<Out, In> for Const<Out>
@@ -322,20 +327,41 @@ impl<O: Zero, I, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result
     }
 }
 
-///Represents an single variable.
+///[`Symbol`](`crate::Symbol`) represents an single variable.
+/// ```
+/// # use symbolic_diffs::*;
+/// let x = Variable;
+/// assert_eq!(6,x.calc(6));
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Variable;
-impl<T> Symbol<T, T> for Variable
+impl<Out, In> Symbol<Out, In> for Variable
 where
-    T: Clone + Zero,
+    Out: Clone + Zero + Borrow<In>,
+    In: ToOwned<Owned = Out>,
 {
     type Derivative = ZeroSym;
-    /// Returns cloned "value"
-    fn calc_ref(&self, value: &T) -> T {
-        value.clone()
+    /// Returns cloned `value`
+    fn calc_ref(&self, value: &In) -> Out {
+        value.to_owned()
     }
-    /// returns [`ZeroSym`](`crate::ZeroSym`)
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, T>>::Derivative
+    /// Returns [`ZeroSym`](`crate::ZeroSym`)
+    ///
+    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
+    /// ```compile_fail
+    /// let x = Variable;
+    /// let _ = x.diff(1);
+    /// ```
+    /// So use like bellow.
+    /// ```
+    /// # use symbolic_diffs::*;
+    /// let x = Variable;
+    /// assert_eq!(0,<Variable as Symbol<i32,i32>>::diff(&x,1).calc(2));
+    /// //use Expr for convinience
+    /// let y = Variable.to_expr();
+    /// assert_eq!(0,y.diff(1).calc(3));
+    /// ```
+    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -343,9 +369,22 @@ where
     }
 }
 
-///Represents an single variable in mulit variable context.
+///[`Symbol`](`crate::Symbol`) represents an single variable in mulit variable context.
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::U1;
+/// let x = DimVariable::<U1>::new();
+///
+/// ```
+/// 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
+
+impl<Dim> DimVariable<Dim>
+    where Dim : Unsigned
+{
+    pub fn new() ->DimVariable<Dim> { DimVariable(PhantomData) }
+} 
 
 impl<Dim, T, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
@@ -369,7 +408,7 @@ where
     }
 }
 
-///Represents an monomial with coefficient and degree in mulit variable context.
+///[`Symbol`](`crate::Symbol`) represents an monomial with coefficient and degree in mulit variable context.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimMonomial<Dim: Unsigned, Coefficient, Degree>(Coefficient, Degree, PhantomData<Dim>);
 
