@@ -16,14 +16,14 @@ use typenum::{
 pub mod ops;
 
 ///Expression symbol for calculating and differentiation.
-pub trait Symbol<Out, In>: Clone {
+pub trait Symbol<Out, In: ?Sized>: Clone {
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
-    /// Use usize 1 or [`U1`](`typenum::U1`) if there is only one variable.
+    /// Use usize 0 or [`U0::new()`](`typenum::UTerm::new`) if there is only one variable.
     fn diff<Dm>(&self, dm: Dm) -> Self::Derivative
     where
         Dm: DiffMarker;
@@ -236,6 +236,11 @@ where
 }
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
+/// ```
+/// # use symbolic_diffs::*;
+/// let x = ZeroSym;
+/// assert_eq!(0,x.calc(6));
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ZeroSym;
 impl<Out, In> Symbol<Out, In> for ZeroSym
@@ -260,6 +265,11 @@ where
 }
 
 ///[`Symbol`](`crate::Symbol`) represent an constant value.
+/// ```
+/// # use symbolic_diffs::*;
+/// let x : Const<isize> = 3.into();
+/// assert_eq!(3,x.calc(6));
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Const<T>(T);
 impl<Out, In> Symbol<Out, In> for Const<Out>
@@ -350,16 +360,18 @@ where
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
     /// ```compile_fail
     /// let x = Variable;
-    /// let _ = x.diff(1);
+    /// let _ = x.diff(0);
     /// ```
     /// So use like bellow.
     /// ```
     /// # use symbolic_diffs::*;
+    /// # use typenum::U0;
     /// let x = Variable;
     /// assert_eq!(0,<Variable as Symbol<i32,i32>>::diff(&x,1).calc(2));
     /// //use Expr for convinience
     /// let y = Variable.to_expr();
-    /// assert_eq!(0,y.diff(1).calc(3));
+    /// assert_eq!(0,y.diff(0).calc(3));
+    /// assert_eq!(0,y.diff(U0::new()).calc(4));
     /// ```
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
@@ -372,19 +384,25 @@ where
 ///[`Symbol`](`crate::Symbol`) represents an single variable in mulit variable context.
 /// ```
 /// # use symbolic_diffs::*;
-/// # use typenum::U1;
-/// let x = DimVariable::<U1>::new();
-///
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let v = arr![i32; 2,3];
+/// let x = DimVariable::<U0>::new();
+/// assert_eq!(2,x.calc(v));
+/// let y = DimVariable::<U1>::new();
+/// assert_eq!(3,y.calc(v));
 /// ```
-/// 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
 
 impl<Dim> DimVariable<Dim>
-    where Dim : Unsigned
+where
+    Dim: Unsigned,
 {
-    pub fn new() ->DimVariable<Dim> { DimVariable(PhantomData) }
-} 
+    pub fn new() -> DimVariable<Dim> {
+        DimVariable(PhantomData)
+    }
+}
 
 impl<Dim, T, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
@@ -399,7 +417,26 @@ where
             T::zero()
         }
     }
-    /// returns [`ZeroSym`](`crate::ZeroSym`)
+
+    /// returns [`ZeroSym`](`crate::ZeroSym`)    
+    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
+    /// ```compile_fail
+    /// let x = DimVariable::<U0>::new();
+    /// let _ = x.diff(0);
+    /// ```
+    /// So use [`to_expr`](`crate::SymbolEx::to_expr`) like bellow.
+    /// ```
+    /// # use symbolic_diffs::*;
+    /// # use typenum::*;
+    /// # use generic_array::*;
+    /// let v = arr![i32; 2,3];
+    /// let x = DimVariable::<U0>::new().to_expr();
+    /// assert_eq!(0,x.diff(U0::new()).calc(v));
+    /// assert_eq!(0,x.diff(U1::new()).calc(v));
+    /// let y = DimVariable::<U1>::new().to_expr();
+    /// assert_eq!(0,y.diff(U0::new()).calc(v));
+    /// assert_eq!(0,y.diff(U1::new()).calc(v));
+    /// ```
     fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
@@ -409,31 +446,84 @@ where
 }
 
 ///[`Symbol`](`crate::Symbol`) represents an monomial with coefficient and degree in mulit variable context.
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let v = arr![i32; 2,3];
+/// let x = DimMonomial::<U0,i32,u8>::new(2,2);
+/// assert_eq!(8,x.calc(v));
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimMonomial<Dim: Unsigned, Coefficient, Degree>(Coefficient, Degree, PhantomData<Dim>);
+impl<Dim, Coefficient, Degree> DimMonomial<Dim, Coefficient, Degree>
+where
+    Dim: Unsigned,
+{
+    /// create new instance
+    pub fn new(c: Coefficient, d: Degree) -> Self {
+        Self(c, d, PhantomData)
+    }
+
+    /// change the dimension
+    pub fn change_dim<NewDim>(self) -> DimMonomial<NewDim, Coefficient, Degree>
+    where
+        NewDim: Unsigned,
+    {
+        DimMonomial(self.0, self.1, PhantomData)
+    }
+}
 
 impl<Dim, T, Degree, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>>
     for DimMonomial<Dim, T, Degree>
 where
     T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree>,
     Dim: Unsigned + IsLess<N>,
-    Degree: Clone + Sub<Output = Degree> + One,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        if <Le<Dim, N> as Bit>::BOOL && !self.0.is_zero() {
-            self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+        if <Le<Dim, N> as Bit>::BOOL {
+            if !self.0.is_zero() {
+                if self.1.is_one() {
+                    self.0.clone() * v[Dim::USIZE].clone()
+                } else {
+                    self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+                }
+            } else {
+                T::zero()
+            }
         } else {
+            //panic!();
             T::zero()
         }
     }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial
+    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
+    /// ```compile_fail
+    /// let x = DimVariable::<U0>::new();
+    /// let _ = x.diff(0);
+    /// ```
+    /// So use [`to_expr`](`crate::SymbolEx::to_expr`) like bellow.
+    /// ```
+    /// # use symbolic_diffs::*;
+    /// # use typenum::*;
+    /// # use generic_array::*;
+    /// let v = arr![i32; 2,3];
+    /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
+    /// assert_eq!(8,x.diff(U0::new()).calc(v));
+    /// assert_eq!(0,x.diff(U1::new()).calc(v));
+    /// //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
+    /// let y = x.inner().change_dim::<U1>().to_expr();
+    /// assert_eq!(0,y.diff(U0::new()).calc(v));
+    /// assert_eq!(12,y.diff(U1::new()).calc(v));
+    /// ```
     fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
     {
-        if dm.dim() == Dim::USIZE {
+        if dm.dim() == Dim::USIZE && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
                 self.1.clone() - Degree::one(),
@@ -442,13 +532,5 @@ where
         } else {
             DimMonomial(T::zero(), Degree::one(), PhantomData)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

@@ -7,6 +7,22 @@ use core::ops::{Add, Div, Mul, Neg, Sub}; //
 pub struct AddOp;
 impl BinaryOp for AddOp {}
 /// Represent [`+`](`core::ops::Add`) Symbol
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
+/// let y = DimMonomial::<U1,i32,u8>::new(3,1);
+/// let xy = x + y;
+/// let v = arr![i32; 1, 1];
+/// let v1 = arr![i32; 2, 3];
+/// assert_eq!(5,xy.calc(v));
+/// assert_eq!(4,xy.diff(U0::new()).calc(v));
+/// assert_eq!(3,xy.diff(U1::new()).calc(v));
+/// assert_eq!(17,xy.calc(v1));
+/// assert_eq!(8,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(3,xy.diff(U1::new()).calc(v1));
+/// ```
 pub type AddSym<Sym1, Sym2, Out, In> = BinarySym<AddOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
@@ -32,6 +48,22 @@ where
 pub struct SubOp;
 impl BinaryOp for SubOp {}
 /// Represent [`-`](`core::ops::Sub`) Symbol
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
+/// let y = DimMonomial::<U1,i32,u8>::new(3,1);
+/// let xy = x - y;
+/// let v = arr![i32; 1, 1];
+/// let v1 = arr![i32; 2, 3];
+/// assert_eq!(-1,xy.calc(v));
+/// assert_eq!(4,xy.diff(U0::new()).calc(v));
+/// assert_eq!(-3,xy.diff(U1::new()).calc(v));
+/// assert_eq!(-1,xy.calc(v1));
+/// assert_eq!(8,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(-3,xy.diff(U1::new()).calc(v1));
+/// ```
 pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
@@ -57,6 +89,22 @@ where
 pub struct MulOp;
 impl BinaryOp for MulOp {}
 /// Represent [`*`](`core::ops::Mul`) Symbol
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
+/// let y = DimMonomial::<U1,i32,u8>::new(3,1);
+/// let xy = x * y;
+/// let v = arr![i32; 1, 1];
+/// let v1 = arr![i32; 2, 3];
+/// assert_eq!(6,xy.calc(v));
+/// assert_eq!(12,xy.diff(U0::new()).calc(v));
+/// assert_eq!(6,xy.diff(U1::new()).calc(v));
+/// assert_eq!(72,xy.calc(v1));
+/// assert_eq!(72,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(24,xy.diff(U1::new()).calc(v1));
+/// ```
 pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
@@ -90,6 +138,22 @@ where
 pub struct DivOp;
 impl BinaryOp for DivOp {}
 /// Represent [`/`](`core::ops::Div`) Symbol
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = DimMonomial::<U0,i32,u8>::new(6,2).to_expr();
+/// let y = DimMonomial::<U1,i32,u8>::new(3,1);
+/// let xy = x / y;
+/// let v = arr![i32; 1, 1];
+/// let v1 = arr![i32; 6, 3];
+/// assert_eq!(2,xy.calc(v));
+/// assert_eq!(4,xy.diff(U0::new()).calc(v));
+/// assert_eq!(-2,xy.diff(U1::new()).calc(v));
+/// assert_eq!(24,xy.calc(v1));
+/// assert_eq!(8,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(-8,xy.diff(U1::new()).calc(v1));
+/// ```
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
@@ -152,6 +216,17 @@ op_expr!(Div, DivSym, div, [Add, Sub, Mul]);
 pub struct NegOp;
 impl UnaryOp for NegOp {}
 /// Represent Unary[`-`](`core::ops::Neg`) Symbol
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = DimMonomial::<U0,i32,u8>::new(6,2).to_expr();
+/// let y = -x;
+/// let v = arr![i32; 1, 1];
+/// let v1 = arr![i32; 6, 3];
+/// assert_eq!(-6,y.calc(v));
+/// assert_eq!(-216,y.calc(v1));
+/// ```
 pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
 
 impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
@@ -182,6 +257,7 @@ where
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use crate::*;
@@ -200,3 +276,4 @@ mod tests {
         assert_eq!(5, x_2.calc(3));
     }
 }
+*/
