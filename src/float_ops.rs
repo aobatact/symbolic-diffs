@@ -3,6 +3,7 @@ use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 use num_traits::float::Float;
 
+/*
 /// [`UnaryOp`](`crate::UnaryOp`) marker for [`exp`](`num_traits::float::Float::exp`) with [`ExpSym`](`crate::float_ops::ExpSym`) for float
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct ExpOp;
@@ -40,6 +41,7 @@ where
         (self.sym.diff(dm).to_expr() * self.clone()).0
     }
 }
+*/
 
 macro_rules! FlaotSymbols {
     ( $( ($t:ident,$me:ident,$op:ident,$ex:tt); )* $(;)*  ) => {
@@ -50,9 +52,11 @@ macro_rules! FlaotSymbols {
         where
             Out: Float,
         {
+            /*
             fn exp(self) -> ExpSym<Self, Out, In> {
                 self.into()
             }
+            */
             $(
                 fn $me(self) -> UnarySym<$op, Self, Out, In> {
                     self.into()
@@ -83,7 +87,7 @@ macro_rules! FloatOps {
                 Dm: DiffMarker,
             {
                 let df = self.sym.diff(dm).to_expr();
-                let y = $ex(self.sym.clone());
+                let y = $ex(&self);
                 df * y
             }
         }
@@ -91,10 +95,11 @@ macro_rules! FloatOps {
 }
 
 FlaotSymbols!(
-    (Sin,sin, SinOp, (|x : Sym| x.cos()) );
-    (Cos,cos, CosOp, (|x : Sym| -(x.sin().to_expr())) );
+    (Exp,exp, ExpOp, (|x : &Self| x.clone()) );
+    (Sin,sin, SinOp, (|x : &Self| x.sym.clone().cos()) );
+    (Cos,cos, CosOp, (|x : &Self| -(x.sym.clone().sin().to_expr())) );
+    (Tan,tan, TanOp, (|x : &Self| { let cos = x.sym.clone().cos(); Const(Out::one()).to_expr() / (cos.clone().to_expr() * cos).inner() } ));
 );
-
 
 //FloatOps!(Sin,sin, SinOp, (|x : Sym| x.cos()) );
 
@@ -122,77 +127,25 @@ where
 {
 }
 
-
-mod wip{
-    use crate::ops::*;
+#[cfg(test)]
+mod tests {
     use crate::*;
-    use core::ops::{Add, Div, Mul, Neg, Sub};
-    use num_traits::float::Float;
-    pub struct UnarySymEx<Out, In, S1, S2, CF, DF>(
-        CF,
-        DF,
-        S1,
-        PhantomData<Out>,
-        PhantomData<In>,
-        PhantomData<S2>,
-    )
-    where
-        CF: Fn(Out) -> Out,
-        DF: Fn(S1) -> S2;
+    use crate::float_ops::*;
+    use typenum::*;
+    use generic_array::*;
 
-    impl<Out, In, S1, S2, CF, DF> Clone for UnarySymEx<Out, In, S1, S2, CF, DF>
-    where
-        S1: Symbol<Out, In>,
-        S2: Symbol<Out, In>,
-        CF: Fn(Out) -> Out,
-        DF: Fn(S1) -> S2,
-    {
-        fn clone(&self) -> Self {
-            todo!()
-        }
+    #[test]
+    fn exp() {
+        let x: Expr<Variable, isize> = Variable.into();
+        assert_eq!(2, x.calc(2));
+        assert_eq!(0, x.diff(1).calc(2));
+        let _x_m2 = x.clone() + x.clone();
+        let x_m2 = x + x;
+        assert_eq!(4, x_m2.calc(2));
+        assert_eq!(6, x_m2.calc(3));
+        let c2: Const<isize> = 2.into();
+        let x_2 = x + c2;
+        assert_eq!(4, x_2.calc(2));
+        assert_eq!(5, x_2.calc(3));
     }
-
-    // impl<Out, In, S1, S2, CF, DF> UnaryOp for UnaryOpEx<Out, In, S1, S2, CF, DF> where
-    // CF: Fn(Out) -> Out,
-    // DF: Fn(S1) -> S2{}
-    //
-
-    impl<Out, In, S1, S2, CF, DF> Symbol<Out, In> for UnarySymEx<Out, In, S1, S2, CF, DF>
-    where
-        S1: Symbol<Out, In>,
-        S2: Symbol<Out, In>,
-        CF: Fn(Out) -> Out,
-        DF: Fn(S1) -> S2,
-    {
-        type Derivative = impl Symbol<Out, In>;
-        fn calc_ref(&self, v: &In) -> Out {
-            (self.0)(self.2.calc_ref(v))
-        }
-        fn diff<Dm>(&self, _: Dm) -> <Self as Symbol<Out, In>>::Derivative
-        where
-            Dm: DiffMarker,
-        {
-            (self.1)(self.2.clone())
-        }
-    }
-
-    /*
-    impl<Out, In, Sym, CF, DF> Symbol<Out, In> for (CF,DF,Sym)
-    where
-        Sym: Symbol<Out, In>,
-        CF: Fn(Out) -> Out + Clone,
-        DF: Fn(Sym) -> (impl Symbol<Out, In>) + Clone,
-    {
-        type Derivative = impl Symbol<Out, In>;
-        fn calc_ref(&self, v: &In) -> Out {
-            (self.0)(self.2.calc_ref(v))
-        }
-        fn diff<Dm>(&self, _: Dm) -> <Self as Symbol<Out, In>>::Derivative
-        where
-            Dm: DiffMarker,
-        {
-            (self.1)(self.2.clone())
-        }
-    }
-    */
 }

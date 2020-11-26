@@ -278,7 +278,7 @@ where
 /// assert_eq!(3,x.calc(6));
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct Const<T>(T);
+pub struct Const<T>(pub T);
 impl<Out, In> Symbol<Out, In> for Const<Out>
 where
     Out: Zero + Clone,
