@@ -109,7 +109,7 @@ where
     }
 }
 
-impl<Sym, Out: Clone, In: Clone> Symbol<Out, In> for Expr<Sym, Out, In>
+impl<Sym, Out: Clone, In> Symbol<Out, In> for Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
 {

@@ -17,6 +17,18 @@ macro_rules! FlaotSymbols {
                 }
             )*
         }
+        impl<Sym, Out, In> Expr<Sym, Out, In>
+            where Sym: Symbol<Out,In>,
+                  Out: Float,
+        {
+            $(
+                pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
+                    //let x : UnarySym<$op, Sym, Out, In> = self.inner().into();
+                    //x.to_expr()
+                    self.inner().$me().to_expr()
+                }
+            )*
+        }
     };
 }
 
@@ -26,9 +38,8 @@ macro_rules! FloatOps {
         pub struct $op;
         impl UnaryOp for $op {}
         impl<Sym, Out, In> Symbol<Out, In> for UnarySym<$op, Sym, Out, In>
-        where 
+        where
             Sym: Symbol<Out, In>,
-            In: Clone,
             Out: Float,
         {
             type Derivative = impl Symbol<Out, In>;
@@ -50,8 +61,8 @@ macro_rules! FloatOps {
 
 FlaotSymbols!(
     (Exp,exp, ExpOp, (|x : &Self| x.clone()) );
-    (Sin,sin, SinOp, (|x : &Self| x.sym.clone().cos()) );
-    (Cos,cos, CosOp, (|x : &Self| -(x.sym.clone().sin().to_expr())) );
+    (Sin,sin, SinOp, (|x : &Self| x.sym.clone().cos() ) );
+    (Cos,cos, CosOp, (|x : &Self| -(x.sym.clone().sin().to_expr()) ) );
     (Tan,tan, TanOp, (|x : &Self| { let cos = x.sym.clone().cos(); Const(Out::one()).to_expr() / (cos.clone().to_expr() * cos).inner() } ));
 );
 
@@ -64,23 +75,20 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
     use crate::float_ops::*;
-    use typenum::*;
+    use crate::*;
     use generic_array::*;
+    use typenum::*;
 
     #[test]
     fn exp() {
-        let x: Expr<Variable, isize> = Variable.into();
-        assert_eq!(2, x.calc(2));
-        assert_eq!(0, x.diff(1).calc(2));
-        let _x_m2 = x.clone() + x.clone();
-        let x_m2 = x + x;
-        assert_eq!(4, x_m2.calc(2));
-        assert_eq!(6, x_m2.calc(3));
-        let c2: Const<isize> = 2.into();
-        let x_2 = x + c2;
-        assert_eq!(4, x_2.calc(2));
-        assert_eq!(5, x_2.calc(3));
+        let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
+        let y = x.exp();
+        let v = arr![f32; 1., 1.];
+        let v1 = arr![f32; 2., 3.];
+        assert_eq!(2.0_f32.exp(), y.calc(v));
+        assert_eq!(4.0_f32.exp(), y.calc(v1));
+        assert_eq!(2.0_f32.exp() * 2.0, y.diff(U0::new()).calc(v));
+        assert_eq!(4.0_f32.exp() * 2.0, y.diff(U0::new()).calc(v1));
     }
 }
