@@ -1,3 +1,5 @@
+#![feature(type_alias_impl_trait)]
+
 use core::{
     borrow::Borrow,
     marker::PhantomData,
@@ -12,9 +14,9 @@ use typenum::{
     uint::{UInt, UTerm},
 };
 
+pub mod float_ops;
 ///Set of basic numerical operations
 pub mod ops;
-pub mod float_ops;
 
 ///Expression symbol for calculating and differentiation.
 pub trait Symbol<Out, In: ?Sized>: Clone {
@@ -144,7 +146,7 @@ where
 impl<Op, Sym, Out, In> Clone for UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp + Clone,
-    Sym: Symbol<Out, In> + Clone,
+    Sym: Symbol<Out, In>,
 {
     fn clone(&self) -> Self {
         UnarySym {
