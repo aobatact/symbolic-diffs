@@ -41,6 +41,27 @@ where
     }
 }
 
+macro_rules! FlaotSymbols {
+    ( $( ($t:ident,$me:ident,$op:ident,$ex:tt); )* $(;)*  ) => {
+        $(
+            FloatOps!($t,$me,$op,$ex);
+        )*
+        pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
+        where
+            Out: Float,
+        {
+            fn exp(self) -> ExpSym<Self, Out, In> {
+                self.into()
+            }
+            $(
+                fn $me(self) -> UnarySym<$op, Self, Out, In> {
+                    self.into()
+                }
+            )*
+        }
+    };
+}
+
 macro_rules! FloatOps {
     ($t:ident,$me:ident,$op:ident,$ex:tt) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -69,55 +90,15 @@ macro_rules! FloatOps {
     };
 }
 
-FloatOps!(Sin,sin, SinOp, (|x : Sym| x.cos()) );
+FlaotSymbols!(
+    (Sin,sin, SinOp, (|x : Sym| x.cos()) );
+    (Cos,cos, CosOp, (|x : Sym| -(x.sin().to_expr())) );
+);
+
+
+//FloatOps!(Sin,sin, SinOp, (|x : Sym| x.cos()) );
 
 /*
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
-pub struct SinOp;
-impl UnaryOp for SinOp {}
-
-impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SinOp, Sym, Out, In>
-where
-    Sym: Symbol<Out, In>,
-    // for restriction
-    In: Clone,
-    Out: Float,
-{
-    type Derivative = impl Symbol<Out, In>;
-    fn calc_ref(&self, v: &In) -> Out {
-        self.sym.calc_ref(v).sin()
-    }
-    fn diff<Dm>(&self, dm: Dm) -> Self::Derivative
-    where
-        Dm: DiffMarker,
-    {
-        self.sym.diff(dm).to_expr() * self.sym.clone().cos()
-    }
-}
-*/
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
-pub struct CosOp;
-impl UnaryOp for CosOp {}
-
-impl<Sym, Out, In> Symbol<Out, In> for UnarySym<CosOp, Sym, Out, In>
-where
-    Sym: Symbol<Out, In>,
-    // for restriction
-    In: Clone,
-    Out: Float,
-{
-    type Derivative = impl Symbol<Out, In>;
-    fn calc_ref(&self, v: &In) -> Out {
-        self.sym.calc_ref(v).sin()
-    }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
-    {
-        -self.sym.diff(dm).to_expr() * self.sym.clone().sin()
-    }
-}
-
 pub trait FloatSymbolEx<Out, In>: Symbol<Out, In>
 where
     Out: Float,
@@ -132,8 +113,9 @@ where
         self.into()
     }
 }
+*/
 
-impl<Sym, Out, In> FloatSymbolEx<Out, In> for Sym
+impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
 where
     Sym: Symbol<Out, In>,
     Out: Float,
