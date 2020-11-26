@@ -1,6 +1,36 @@
-use crate::ops::*;
 use crate::*;
-use num_traits::float::Float;
+use core::ops::{Add, Div, Mul, Neg, Sub};
+use num_traits::FromPrimitive;
+
+macro_rules! ExNumOpsMacro{
+    /*
+    ( trait + $($t:ident );* $(;)* [$ms:tt] ) => {
+        ExNumOpsMacro!(trait [$ms]);
+        $(
+            ExNumOpsMacro!($t; [$ms]);
+        )*
+    };
+    */
+    ( trait [$($m:ident),* $(,)*] ) => {
+        pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
+                                Clone + Zero + Neg<Output = Self> + One + FromPrimitive{
+            $(
+                fn $m(self) -> Self;
+            )*
+        }
+    };
+    ( $t:ident; [$($m:ident),* $(,)*]) => {
+        impl ExNumOps for $t{
+        $(
+            fn $m(self) -> Self { self.$m() }
+        )*
+        }
+    }
+}
+
+ExNumOpsMacro!(trait [recip, exp, ln, log2, log10, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh] );
+ExNumOpsMacro!(f32;  [recip, exp, ln, log2, log10, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh] );
+ExNumOpsMacro!(f64;  [recip, exp, ln, log2, log10, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh] );
 
 macro_rules! FlaotSymbols {
     ( $( ($t:ident,$me:ident,$op:ident,$ex:tt); )* $(;)*  ) => {
@@ -9,7 +39,7 @@ macro_rules! FlaotSymbols {
         )*
         pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
         where
-            Out: Float,
+            Out: ExNumOps,
         {
             $(
                 fn $me(self) -> UnarySym<$op, Self, Out, In> {
@@ -19,7 +49,7 @@ macro_rules! FlaotSymbols {
         }
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
-                  Out: Float,
+                  Out: ExNumOps,
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
@@ -40,7 +70,11 @@ macro_rules! FloatOps {
         impl<Sym, Out, In> Symbol<Out, In> for UnarySym<$op, Sym, Out, In>
         where
             Sym: Symbol<Out, In>,
-            Out: Float,
+            Out: ExNumOps
+                + Add<Output = Out>
+                + Sub<Output = Out>
+                + Mul<Output = Out>
+                + Div<Output = Out>,
         {
             type Derivative = impl Symbol<Out, In>;
             fn calc_ref(&self, v: &In) -> Out {
@@ -60,23 +94,35 @@ macro_rules! FloatOps {
 }
 
 FlaotSymbols!(
-    (Exp,exp, ExpOp, (|x : &Self| x.clone()) );
-    (Sin,sin, SinOp, (|x : &Self| x.sym.clone().cos() ) );
-    (Cos,cos, CosOp, (|x : &Self| -(x.sym.clone().sin().to_expr()) ) );
-    (Tan,tan, TanOp, (|x : &Self| { let cos = x.sym.clone().cos(); Const(Out::one()).to_expr() / (cos.clone().to_expr() * cos).inner() } ));
+    (Recip, recip,  RecipOp, (|x : &Self| -(x.sym.clone().to_expr() * x.sym.clone()).recip() ));
+    (Exp,   exp,    ExpOp,   (|x : &Self| x.clone() ));
+    (Sin,   sin,    SinOp,   (|x : &Self| x.sym.clone().cos() ));
+    (Cos,   cos,    CosOp,   (|x : &Self| -(x.sym.clone().sin().to_expr()) ));
+    (Tan,   tan,    TanOp,   (|x : &Self| { let cos = x.sym.clone().cos(); (cos.clone().to_expr() * cos).recip() } ));
+    (Sqrt,  sqrt,   SqrtOp,  (|x : &Self| (Const(Out::from_i32(2).unwrap()).to_expr() * x.clone()).recip() ));
+    (Ln,    ln,     LnOp,    (|x : &Self| (x.sym.clone()).recip() ));
+    (Sinh,  sinh,   SinhOp,  (|x : &Self| (x.sym.clone().cosh()) ));
+    (Cosh,  cosh,   CoshOp,  (|x : &Self| (x.sym.clone().sinh()) ));
+    (Tanh,  tanh,   TanhOp,  (|x : &Self| { let y = x.sym.clone().cosh(); (y.clone().to_expr()*y).recip()} ));
+    (Asin,  asin,   AsinOp,  (|x : &Self| (Const(Out::one()).to_expr() - (x.sym.clone().to_expr() * x.sym.clone()).inner()).sqrt().recip() ));
+    (Acos,  acos,   AcosOp,  (|x : &Self| -(Const(Out::one()).to_expr() - (x.sym.clone().to_expr() * x.sym.clone()).inner()).sqrt().recip() ));
+    (Atan,  atan,   AtanOp,  (|x : &Self| ((x.sym.clone().to_expr() * x.sym.clone()) + Const(Out::one())).recip() ));
+    (Asinh, asinh,  AsinhOp, (|x : &Self| ((x.sym.clone().to_expr() * x.sym.clone()) + Const(Out::one())).sqrt().recip() ));
+    (Acosh, acosh,  AcoshOp, (|x : &Self| ((x.sym.clone().to_expr() * x.sym.clone()) - Const(Out::one())).sqrt().recip() ));
+    (Atanh, atanh,  AtanhOp, (|x : &Self| (Const(Out::one()).to_expr() - (x.sym.clone().to_expr() * x.sym.clone()).inner()).recip() ));
 );
 
 impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
 where
     Sym: Symbol<Out, In>,
-    Out: Float,
+    Out: ExNumOps,
 {
 }
 
 #[cfg(test)]
 mod tests {
     use crate::float_ops::*;
-    use crate::*;
+    //use crate::*;
     use generic_array::*;
     use typenum::*;
 
