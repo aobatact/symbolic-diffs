@@ -1,12 +1,11 @@
 //! Module for operating float-like type.
 //! Op structs defined here is used in [`Expr`](crate::Expr) with Out type impliments [`ExNumOps`]
-//! 
-
+//!
 use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 #[cfg(feature = "num-complex")]
 use num_complex::{Complex32, Complex64};
-use num_traits::float::FloatConst;
+use num_traits::{float::FloatConst,pow::Pow};
 
 macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
@@ -180,6 +179,85 @@ where
     Out: ExNumOps,
 {
 }
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct UnaryPowOp<T>(T);
+impl<T> UnaryOp for UnaryPowOp<T> {}
+
+impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone,
+    T: Sub<Output = T> + One + Clone
+{
+    type Derivative = impl Symbol<Out, In>;
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym.calc_ref(value).pow(self.op.0.clone())
+    }
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    where
+        Dm: DiffMarker,
+    {
+        self.sym.clone().diff(dm).to_expr() * UnarySym::new_with_op(UnaryPowOp(self.op.0 - T::one() ), self.sym)
+    }
+}
+
+/*
+//needs specialization
+impl<L, R, Out, In> Pow<R> for Expr<L, Out, In>
+where
+    L: Symbol<Out, In>,
+    R: Sub<Output = R> + One + Clone,
+    Out: ExNumOps + Pow<R, Output = Out> + Clone,
+{
+    type Output = Expr<UnarySym<UnaryPowOp<R>, L, Out, In>, Out, In>;
+    fn pow(self, r: R) -> Self::Output {
+        UnarySym::new_with_op(UnaryPowOp(r), self.0).to_expr()
+    }
+}
+*/
+
+/// [`BinaryOp`](`crate::BinaryOp`) marker for [`pow`](`core::ops::Div`)
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct PowOp;
+impl BinaryOp for PowOp {}
+
+impl<Sym1, Sym2, Out, In> Symbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
+where
+    Sym1: UnaryFloatSymbolEx<Out, In>,
+    Sym2: SymbolEx<Out, In>,
+    Out: ExNumOps + Pow<Out, Output = Out>,
+{
+    type Derivative = impl Symbol<Out, In>;
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
+    }
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    where
+        Dm: DiffMarker,
+    {
+        let sym1 = self.sym1.clone();
+        let sym2 = self.sym2.clone();
+        let s2dif = sym2.clone().diff(dm);
+        let a = sym1.clone().diff(dm).to_expr() * sym2 / sym1.clone();
+        let b = sym1.ln().to_expr() * s2dif;
+        (a + b.inner()) * self
+    }
+}
+
+
+impl<L, R, Out, In> Pow<R> for Expr<L, Out, In>
+where
+    L: UnaryFloatSymbolEx<Out, In>,
+    R: Symbol<Out, In>,
+    Out: ExNumOps + Pow<Out, Output = Out>,
+{
+    type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
+    fn pow(self, r: R) -> Self::Output {
+        BinarySym::new(self.0, r).into()
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,5 @@
 use super::*;
-use core::ops::{Add, Div, Mul, Neg, Sub}; //
+use core::ops::{Add, Div, Mul, Neg, Sub};
 
 /// [`BinaryOp`](`crate::BinaryOp`) marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
