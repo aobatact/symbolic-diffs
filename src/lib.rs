@@ -27,7 +27,7 @@ pub trait Symbol<Out, In: ?Sized>: Clone {
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 or [`U0::new()`](`typenum::UTerm::new`) if there is only one variable.
-    fn diff<Dm>(&self, dm: Dm) -> Self::Derivative
+    fn diff<Dm>(self, dm: Dm) -> Self::Derivative
     where
         Dm: DiffMarker;
 }
@@ -119,7 +119,7 @@ where
         self.0.calc_ref(value)
     }
     #[inline]
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -263,7 +263,7 @@ where
 
     ///Returns Zero Symbol.
     #[inline]
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -289,7 +289,7 @@ where
         self.0.clone()
     }
     /// returns [`ZeroSym`](`crate::ZeroSym`)
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -299,7 +299,7 @@ where
 
 impl<T> From<T> for Const<T>
 where
-    T: Zero + Clone,
+    T: Clone,
 {
     fn from(v: T) -> Const<T> {
         Const(v)
@@ -333,7 +333,7 @@ impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
             None => O::zero(),
         }
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -352,7 +352,7 @@ impl<O: Zero, I, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result
             Err(sym) => sym.calc_ref(value),
         }
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -393,13 +393,13 @@ where
     /// # use symbolic_diffs::*;
     /// # use typenum::U0;
     /// let x = Variable;
-    /// assert_eq!(0,<Variable as Symbol<i32,i32>>::diff(&x,1).calc(2));
+    /// assert_eq!(0,<Variable as Symbol<i32,i32>>::diff(x,1).calc(2));
     /// //use Expr for convinience
     /// let y = Variable.to_expr();
-    /// assert_eq!(0,y.diff(0).calc(3));
+    /// assert_eq!(0,y.clone().diff(0).calc(3));
     /// assert_eq!(0,y.diff(U0::new()).calc(4));
     /// ```
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -463,7 +463,7 @@ where
     /// assert_eq!(0,y.diff(U0::new()).calc(v));
     /// assert_eq!(0,y.diff(U1::new()).calc(v));
     /// ```
-    fn diff<Dm>(&self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
+    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -545,7 +545,7 @@ where
     /// assert_eq!(0,y.diff(U0::new()).calc(v));
     /// assert_eq!(12,y.diff(U1::new()).calc(v));
     /// ```
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
     {

@@ -16,10 +16,10 @@ impl BinaryOp for AddOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 2, 3];
 /// assert_eq!(5,xy.calc(v));
-/// assert_eq!(4,xy.diff(U0::new()).calc(v));
-/// assert_eq!(3,xy.diff(U1::new()).calc(v));
+/// assert_eq!(4,xy.clone().diff(U0::new()).calc(v));
+/// assert_eq!(3,xy.clone().diff(U1::new()).calc(v));
 /// assert_eq!(17,xy.calc(v1));
-/// assert_eq!(8,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(8,xy.clone().diff(U0::new()).calc(v1));
 /// assert_eq!(3,xy.diff(U1::new()).calc(v1));
 /// ```
 pub type AddSym<Sym1, Sym2, Out, In> = BinarySym<AddOp, Sym1, Sym2, Out, In>;
@@ -34,7 +34,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -57,10 +57,10 @@ impl BinaryOp for SubOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 2, 3];
 /// assert_eq!(-1,xy.calc(v));
-/// assert_eq!(4,xy.diff(U0::new()).calc(v));
-/// assert_eq!(-3,xy.diff(U1::new()).calc(v));
+/// assert_eq!(4,xy.clone().diff(U0::new()).calc(v));
+/// assert_eq!(-3,xy.clone().diff(U1::new()).calc(v));
 /// assert_eq!(-1,xy.calc(v1));
-/// assert_eq!(8,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(8,xy.clone().diff(U0::new()).calc(v1));
 /// assert_eq!(-3,xy.diff(U1::new()).calc(v1));
 /// ```
 pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
@@ -75,7 +75,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -98,10 +98,10 @@ impl BinaryOp for MulOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 2, 3];
 /// assert_eq!(6,xy.calc(v));
-/// assert_eq!(12,xy.diff(U0::new()).calc(v));
-/// assert_eq!(6,xy.diff(U1::new()).calc(v));
+/// assert_eq!(12,xy.clone().diff(U0::new()).calc(v));
+/// assert_eq!(6,xy.clone().diff(U1::new()).calc(v));
 /// assert_eq!(72,xy.calc(v1));
-/// assert_eq!(72,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(72,xy.clone().diff(U0::new()).calc(v1));
 /// assert_eq!(24,xy.diff(U1::new()).calc(v1));
 /// ```
 pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
@@ -121,13 +121,14 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
+        let sym2diff = self.sym2.clone().diff(dm);
         BinarySym::new(
-            BinarySym::new(self.sym1.diff(dm), self.sym2.clone()),
-            BinarySym::new(self.sym1.clone(), self.sym2.diff(dm)),
+            BinarySym::new(self.sym1.clone().diff(dm), self.sym2),
+            BinarySym::new(self.sym1, sym2diff),
         )
     }
 }
@@ -147,10 +148,10 @@ impl BinaryOp for DivOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 6, 3];
 /// assert_eq!(2,xy.calc(v));
-/// assert_eq!(4,xy.diff(U0::new()).calc(v));
-/// assert_eq!(-2,xy.diff(U1::new()).calc(v));
+/// assert_eq!(4,xy.clone().diff(U0::new()).calc(v));
+/// assert_eq!(-2,xy.clone().diff(U1::new()).calc(v));
 /// assert_eq!(24,xy.calc(v1));
-/// assert_eq!(8,xy.diff(U0::new()).calc(v1));
+/// assert_eq!(8,xy.clone().diff(U0::new()).calc(v1));
 /// assert_eq!(-8,xy.diff(U1::new()).calc(v1));
 /// ```
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
@@ -175,16 +176,16 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) / self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
         BinarySym::new(
             BinarySym::new(
-                BinarySym::new(self.sym1.diff(dm), self.sym2.clone()),
-                BinarySym::new(self.sym1.clone(), self.sym2.diff(dm)),
+                BinarySym::new(self.sym1.clone().diff(dm), self.sym2.clone()),
+                BinarySym::new(self.sym1, self.sym2.clone().diff(dm)),
             ),
-            BinarySym::new(self.sym2.clone(), self.sym2.clone()),
+            BinarySym::new(self.sym2.clone(), self.sym2),
         )
     }
 }
@@ -237,7 +238,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         -self.sym.calc_ref(value)
     }
-    fn diff<Dm>(&self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
@@ -253,6 +254,41 @@ where
     type Output = Expr<NegSym<S, O, I>, O, I>;
     fn neg(self) -> Self::Output {
         NegSym::from(self.0).into()
+    }
+}
+
+/// [`UnaryOp`](`crate::UnaryOp`) marker for `x` [*](`core::ops::Mul`)`x`
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct SquareOp;
+impl UnaryOp for SquareOp {}
+
+impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
+{
+    type Derivative = impl Symbol<Out, In> ;
+    fn calc_ref(&self, value: &In) -> Out {
+        let x = self.sym.calc_ref(value);
+        x.clone() * x
+    }
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    where
+        Dm: DiffMarker,
+    {
+        let one = Out::one();
+        let two = one.clone() + one;
+        Const::from(two).to_expr() * self.sym.clone().diff(dm) * self.sym
+    }
+}
+
+impl<Sym, Out, In> Expr<Sym, Out, In>
+    where Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
+{
+    pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
+        let sq :UnarySym<SquareOp, Sym, Out, In> =  self.inner().into();
+        sq.to_expr()
     }
 }
 
