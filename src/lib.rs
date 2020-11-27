@@ -143,18 +143,18 @@ where
     pi: PhantomData<In>,
 }
 
-impl<Op, Sym, Out, In>  UnarySym<Op, Sym, Out, In>
+impl<Op, Sym, Out, In> UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp,
     Sym: Symbol<Out, In>,
 {
-    fn new_with_op(op : Op, sym: Sym) -> Self{
+    fn new_with_op(op: Op, sym: Sym) -> Self {
         UnarySym {
-    op: op,
-    sym: sym,
-    po: PhantomData,
-    pi: PhantomData,
-    }
+            op: op,
+            sym: sym,
+            po: PhantomData,
+            pi: PhantomData,
+        }
     }
 }
 

@@ -267,7 +267,7 @@ where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
 {
-    type Derivative = impl Symbol<Out, In> ;
+    type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
         let x = self.sym.calc_ref(value);
         x.clone() * x
@@ -283,14 +283,70 @@ where
 }
 
 impl<Sym, Out, In> Expr<Sym, Out, In>
-    where Sym: Symbol<Out, In>,
+where
+    Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
-        let sq :UnarySym<SquareOp, Sym, Out, In> =  self.inner().into();
+        let sq: UnarySym<SquareOp, Sym, Out, In> = self.inner().into();
         sq.to_expr()
     }
 }
+
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct UnaryPowOp<T>(T);
+impl<T> UnaryOp for UnaryPowOp<T> {}
+
+impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone,
+    T: Sub<Output = T> + One + Clone,
+{
+    type Derivative = impl Symbol<Out, In>;
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym.calc_ref(value).pow(self.op.0.clone())
+    }
+    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    where
+        Dm: DiffMarker,
+    {
+        self.sym.clone().diff(dm).to_expr()
+            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - T::one()), self.sym)
+    }
+}
+
+/*
+//needs specialization
+impl<L, R, Out, In> Pow<R> for Expr<L, Out, In>
+where
+    L: Symbol<Out, In>,
+    R: Sub<Output = R> + One + Clone,
+    Out: ExNumOps + Pow<R, Output = Out> + Clone,
+{
+    type Output = Expr<UnarySym<UnaryPowOp<R>, L, Out, In>, Out, In>;
+    fn pow(self, r: R) -> Self::Output {
+        UnarySym::new_with_op(UnaryPowOp(r), self.0).to_expr()
+    }
+}
+*/
+
+/// Operation for pow
+impl<Sym, Out, In> Expr<Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone,
+{
+    pub fn pow_t<T>(self, r: T) -> Expr<UnarySym<UnaryPowOp<T>, Sym, Out, In>, Out, In>
+    where
+        Out: Pow<T, Output = Out>,
+        T: Sub<Output = T> + One + Clone,
+    {
+        UnarySym::new_with_op(UnaryPowOp(r), self.inner()).to_expr()
+    }
+}
+
 
 /*
 #[cfg(test)]
