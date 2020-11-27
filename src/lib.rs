@@ -306,6 +306,25 @@ where
     }
 }
 
+impl<T> Mul for Const<T>
+where
+    T: Mul<Output = T> + Zero + Clone,
+{
+    type Output = Self;
+    fn mul(self, r: Self) -> Self {
+        (self.0 * r.0).into()
+    }
+}
+
+impl<T> One for Const<T>
+where
+    T: Zero + One + Clone + Mul<Output = T>,
+{
+    fn one() -> Self {
+        T::one().into()
+    }
+}
+
 impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
     type Derivative = Option<Sym::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
