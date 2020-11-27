@@ -1,3 +1,7 @@
+//! Module for operating float-like type.
+//! Op structs defined here is used in [`Expr`](crate::Expr) with Out type impliments [`ExNumOps`]
+//! 
+
 use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 #[cfg(feature = "num-complex")]
@@ -50,6 +54,7 @@ ExNumOpsMacro!(Complex64; [exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh,
 
 macro_rules! ExNumConstsMacro {
     (trait [$($constant:ident),+ $(,)*]; [$( $constant_n:ident ),+ $(,)*] ) => {
+        /// Constans need for Operations.
         pub trait ExNumConsts {
             $(
                 fn $constant() -> Self;
@@ -98,9 +103,10 @@ macro_rules! FlaotSymbols {
                 }
             )*
         }
+        /// Opreations for Float like type.
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
-                  Out: ExNumOps + ExNumConsts,
+                  Out: ExNumOps,
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
@@ -122,7 +128,6 @@ macro_rules! FloatOps {
         where
             Sym: Symbol<Out, In>,
             Out: ExNumOps
-                + ExNumConsts
                 + Add<Output = Out>
                 + Sub<Output = Out>
                 + Mul<Output = Out>
@@ -153,8 +158,6 @@ FlaotSymbols!(
     (Tan,   tan,    TanOp,   (|x : &Self| { let cos = x.sym.clone().cos(); (cos.clone().to_expr() * cos).recip() } ));
     (Sqrt,  sqrt,   SqrtOp,  (|x : &Self| (Const(Out::two()).to_expr() * x.clone()).recip() ));
     (Ln,    ln,     LnOp,    (|x : &Self| (x.sym.clone()).recip() ));
-    (Ln_1p, ln_1p,  LnOp1p,  (|x : &Self| (x.sym.clone().to_expr() + Const::one()).recip() ));
-    (Log2,  log2,   Log2,    (|x : &Self| (x.sym.clone().to_expr() * Const(Out::ln_2()) ).recip() ));
     (Sinh,  sinh,   SinhOp,  (|x : &Self| (x.sym.clone().cosh()) ));
     (Cosh,  cosh,   CoshOp,  (|x : &Self| (x.sym.clone().sinh()) ));
     (Tanh,  tanh,   TanhOp,  (|x : &Self| { let y = x.sym.clone().cosh(); (y.clone().to_expr()*y).recip()} ));
@@ -164,6 +167,11 @@ FlaotSymbols!(
     (Asinh, asinh,  AsinhOp, (|x : &Self| ((x.sym.clone().to_expr() * x.sym.clone()) + Const::one()).sqrt().recip() ));
     (Acosh, acosh,  AcoshOp, (|x : &Self| ((x.sym.clone().to_expr() * x.sym.clone()) - Const::one()).sqrt().recip() ));
     (Atanh, atanh,  AtanhOp, (|x : &Self| (Const::one().to_expr() - (x.sym.clone().to_expr() * x.sym.clone()).inner()).recip() ));
+    (Ln_1p, ln_1p,  LnOp1p,  (|x : &Self| (x.sym.clone().to_expr() + Const::one()).recip() ));
+    (Log2,  log2,   Log2,    (|x : &Self| (x.sym.clone().to_expr() * Const(Out::ln_2()) ).recip() ));
+    (Log10, log10,  Log10,   (|x : &Self| (x.sym.clone().to_expr() * Const(Out::ln_10()) ).recip() ));
+    (ExpM1, exp_m1, ExpM1Op, (|x : &Self| x.clone() ));
+    (Exp2,  exp2,   Exp2Op,  (|x : &Self| x.clone().to_expr() * Const(Out::ln_2()) ));
 );
 
 impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
