@@ -10,15 +10,15 @@ use num_traits::{One, Pow, Zero};
 use typenum::{
     marker_traits::{Bit, Unsigned},
     operator_aliases::Le,
-    type_operators::{IsLess,Same},
+    type_operators::{IsLess, Same},
     uint::{UInt, UTerm},
     True,
 };
 
+pub mod dynamic_sym;
 pub mod float_ops;
 ///Set of basic numerical operations
 pub mod ops;
-pub mod dynamic_sym;
 
 ///Expression symbol for calculating and differentiation.
 pub trait Symbol<Out, In: ?Sized>: Clone {
@@ -461,16 +461,16 @@ where
     T: Clone + Zero,
     Dim: Unsigned + IsLess<N>,
     N: ArrayLength<T>,
-    True: Same<<Dim as IsLess<N>>::Output>
+    True: Same<<Dim as IsLess<N>>::Output>,
 {
     type Derivative = ZeroSym;
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        debug_assert!(<Le<Dim, N> as Bit>::BOOL );
+        debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         v[Dim::USIZE].clone()
     }
 
     /// Returns [`ZeroSym`](`crate::ZeroSym`).
-    /// 
+    ///
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
@@ -535,19 +535,18 @@ where
     }
 }
 
-impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>>
-    for DimMonomial<Dim, T, Degree>
+impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
     T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree>,
     Dim: Unsigned + IsLess<N>,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq,
     N: ArrayLength<T>,
-    True: Same<<Dim as IsLess<N>>::Output>
+    True: Same<<Dim as IsLess<N>>::Output>,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        debug_assert!(<Le<Dim, N> as Bit>::BOOL );
+        debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         if !self.0.is_zero() {
             if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()
@@ -559,7 +558,7 @@ where
         }
     }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
-    /// 
+    ///
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
