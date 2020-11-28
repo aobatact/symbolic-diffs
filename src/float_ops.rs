@@ -106,6 +106,7 @@ macro_rules! FlaotSymbols {
             )*
         }
         /// Opreations for [`Float`](`num_traits::float::Float`) like type.
+        /// This returns wrapped `Expr`.
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
                   Out: ExNumOps,

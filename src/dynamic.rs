@@ -31,14 +31,13 @@ impl<Out, In: ?Sized> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
     }
 }
 
+/*
 pub trait DynamicSymbolEx<Out, In: ?Sized> {
     fn to_dyn_expr(self) -> Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>;
 }
 
 impl<Out, In: ?Sized> DynamicSymbolEx<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
-    fn to_dyn_expr(
-        self,
-    ) -> Expr<std::sync::Arc<(dyn dynamic::DynamicSymbol<Out, In> + 'static)>, Out, In> {
+    fn to_dyn_expr(self) -> Expr<Arc<(dyn DynamicSymbol<Out, In>)>, Out, In> {
         self.into()
     }
 }
@@ -57,12 +56,16 @@ pub struct DynBinarySym<Op: BinaryOp, Out, In>(
     PhantomData<Out>,
     PhantomData<In>,
 );
+*/
 
 #[cfg(test)]
 mod tests {
-    use crate::dynamic::DynamicSymbol;
-    use crate::*;
+    use crate::dynamic::*;
+    use crate::float_ops::*;
+    //use crate::*;
+    use generic_array::*;
     use std::sync::Arc;
+    use typenum::*;
 
     #[test]
     fn variable() {
@@ -73,17 +76,35 @@ mod tests {
         let z = y.diff_dyn(0);
         assert_eq!(0, z.calc_dyn(&1));
 
+        let x: Expr<Variable, f32> = Variable.into();
         let w = Arc::new(x);
-        assert_eq!(1, x.calc_dyn(&1));
-        let w = (w as Arc<dyn DynamicSymbol<isize, isize>>).to_expr();
-        assert_eq!(1, x.calc_dyn(&1));
+        assert_eq!(1., x.calc_dyn(&1.));
+        let w = (w as Arc<dyn DynamicSymbol<f32, f32>>).to_expr();
+        assert_eq!(1., x.calc_dyn(&1.));
         let y = w.clone() + w.clone();
-        assert_eq!(2, y.calc_dyn(&1));
+        assert_eq!(2., y.calc_dyn(&1.));
         let y = w.clone() + x;
-        assert_eq!(2, y.calc_dyn(&1));
+        assert_eq!(2., y.calc_dyn(&1.));
         let y = x + w.clone();
-        assert_eq!(2, y.calc_dyn(&1));
+        assert_eq!(2., y.calc_dyn(&1.));
         let z = y.diff_dyn(0);
-        assert_eq!(0, z.calc_dyn(&1));
+        assert_eq!(0., z.calc_dyn(&1.));
+
+        let wexp = w.exp();
+        assert_eq!(1_f32.exp(), wexp.calc_dyn(&1.));
+    }
+
+    #[test]
+    fn monomial() {
+        let x = DimMonomial::<U0, f32, u8>::new(2., 3).to_expr();
+        let v = arr![f32; 2.0];
+        assert_eq!(16., x.calc_dyn(&v));
+        let y = x + x;
+        assert_eq!(32., y.calc_dyn(&v));
+        let z = y.diff_dyn(0);
+        assert_eq!(48., z.calc_dyn(&v));
+
+        let a = z.to_expr() + x;
+        assert_eq!(64., a.calc_dyn(&v));
     }
 }
