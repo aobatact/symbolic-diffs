@@ -10,8 +10,9 @@ use num_traits::{One, Pow, Zero};
 use typenum::{
     marker_traits::{Bit, Unsigned},
     operator_aliases::Le,
-    type_operators::IsLess,
+    type_operators::{IsLess,Same},
     uint::{UInt, UTerm},
+    True,
 };
 
 pub mod float_ops;
@@ -433,6 +434,15 @@ where
 /// let y = DimVariable::<U1>::new();
 /// assert_eq!(3,y.calc(v));
 /// ```
+/// The dimention of variable is statically checked.
+/// ```compile_fail
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let v = arr![i32; 2,3];
+/// let x = DimVariable::<U2>::new();
+/// assert_eq!(0,x.calc(v));
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
 
@@ -445,21 +455,21 @@ where
     }
 }
 
-impl<Dim, T, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
+impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero,
     Dim: Unsigned + IsLess<N>,
+    N: ArrayLength<T>,
+    True: Same<<Dim as IsLess<N>>::Output>
 {
     type Derivative = ZeroSym;
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        if <Le<Dim, N> as Bit>::BOOL {
-            v[Dim::USIZE].clone()
-        } else {
-            T::zero()
-        }
+        debug_assert!(<Le<Dim, N> as Bit>::BOOL );
+        v[Dim::USIZE].clone()
     }
 
-    /// returns [`ZeroSym`](`crate::ZeroSym`)    
+    /// Returns [`ZeroSym`](`crate::ZeroSym`).
+    /// 
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
@@ -495,6 +505,15 @@ where
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2);
 /// assert_eq!(8,x.calc(v));
 /// ```
+/// The dimention of variable is statically checked.
+/// ```compile_fail
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let v = arr![i32; 2,3];
+/// let x = DimMonomial::<U2,i32,u8>::new(2,2);
+/// assert_eq!(0,x.calc(v));
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct DimMonomial<Dim: Unsigned, Coefficient, Degree>(Coefficient, Degree, PhantomData<Dim>);
 impl<Dim, Coefficient, Degree> DimMonomial<Dim, Coefficient, Degree>
@@ -515,32 +534,31 @@ where
     }
 }
 
-impl<Dim, T, Degree, N: ArrayLength<T>> Symbol<T, GenericArray<T, N>>
+impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>>
     for DimMonomial<Dim, T, Degree>
 where
     T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree>,
     Dim: Unsigned + IsLess<N>,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq,
+    N: ArrayLength<T>,
+    True: Same<<Dim as IsLess<N>>::Output>
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        if <Le<Dim, N> as Bit>::BOOL {
-            if !self.0.is_zero() {
-                if self.1.is_one() {
-                    self.0.clone() * v[Dim::USIZE].clone()
-                } else {
-                    self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
-                }
+        debug_assert!(<Le<Dim, N> as Bit>::BOOL );
+        if !self.0.is_zero() {
+            if self.1.is_one() {
+                self.0.clone() * v[Dim::USIZE].clone()
             } else {
-                T::zero()
+                self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
             }
         } else {
-            //panic!();
             T::zero()
         }
     }
-    /// Differentiate if `dm == dim`, else return zeroed DimMonomial
+    /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
+    /// 
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();

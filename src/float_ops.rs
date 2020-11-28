@@ -19,16 +19,16 @@ macro_rules! ExNumOpsMacro{
                 (self - Self::one()).exp()
             }
             fn exp2(self) -> Self{
-                (self * Self::ln_2())
+                Self::ln_2() * self
             }
             fn ln_1p(self) -> Self{
                 (self + Self::one()).ln()
             }
             fn log2(self) -> Self{
-                self.ln() * Self::log2_e()
+                Self::log2_e() * self.ln()
             }
             fn log10(self) -> Self{
-                self.ln() * Self::log10_e()
+                Self::log10_e() * self.ln()
             }
             fn recip(self) -> Self{
                 Self::one() / self
@@ -158,20 +158,20 @@ FlaotSymbols!(
     (Tan,   tan,    TanOp,   (|x : Self| x.sym.cos().to_expr().square().recip() ));
     (Sqrt,  sqrt,   SqrtOp,  (|x : Self| (Const(Out::two()).to_expr() * x).recip() ));
     (Ln,    ln,     LnOp,    (|x : Self| x.sym.recip() ));
-    (Sinh,  sinh,   SinhOp,  (|x : Self| (x.sym.cosh()) ));
-    (Cosh,  cosh,   CoshOp,  (|x : Self| (x.sym.sinh()) ));
-    (Tanh,  tanh,   TanhOp,  (|x : Self| { let y = x.sym.cosh(); (y.clone().to_expr()*y).recip()} ));
-    (Asin,  asin,   AsinOp,  (|x : Self| (Const::one().to_expr() - (x.sym.to_expr().square()).inner()).sqrt().recip() ));
-    (Acos,  acos,   AcosOp,  (|x : Self| -(Const::one().to_expr() - (x.sym.to_expr().square()).inner()).sqrt().recip() ));
-    (Atan,  atan,   AtanOp,  (|x : Self| ((x.sym.to_expr().square()) + Const::one()).recip() ));
-    (Asinh, asinh,  AsinhOp, (|x : Self| ((x.sym.to_expr().square()) + Const::one()).sqrt().recip() ));
-    (Acosh, acosh,  AcoshOp, (|x : Self| ((x.sym.to_expr().square()) - Const::one()).sqrt().recip() ));
-    (Atanh, atanh,  AtanhOp, (|x : Self| (Const::one().to_expr() - (x.sym.to_expr().square()).inner()).recip() ));
+    (Sinh,  sinh,   SinhOp,  (|x : Self| x.sym.cosh() ));
+    (Cosh,  cosh,   CoshOp,  (|x : Self| x.sym.sinh() ));
+    (Tanh,  tanh,   TanhOp,  (|x : Self| x.sym.cosh().to_expr().square().recip() ));
+    (Asin,  asin,   AsinOp,  (|x : Self| (Const::one().to_expr() - x.sym.to_expr().square().inner()).sqrt().recip() ));
+    (Acos,  acos,   AcosOp,  (|x : Self| -(Const::one().to_expr() - x.sym.to_expr().square().inner()).sqrt().recip() ));
+    (Atan,  atan,   AtanOp,  (|x : Self| (x.sym.to_expr().square() + Const::one()).recip() ));
+    (Asinh, asinh,  AsinhOp, (|x : Self| (x.sym.to_expr().square() + Const::one()).sqrt().recip() ));
+    (Acosh, acosh,  AcoshOp, (|x : Self| (x.sym.to_expr().square() - Const::one()).sqrt().recip() ));
+    (Atanh, atanh,  AtanhOp, (|x : Self| (Const::one().to_expr() - x.sym.to_expr().square().inner()).recip() ));
     (Ln_1p, ln_1p,  LnOp1p,  (|x : Self| (x.sym.to_expr() + Const::one()).recip() ));
     (Log2,  log2,   Log2,    (|x : Self| (x.sym.to_expr() * Const(Out::ln_2()) ).recip() ));
     (Log10, log10,  Log10,   (|x : Self| (x.sym.to_expr() * Const(Out::ln_10()) ).recip() ));
     (ExpM1, exp_m1, ExpM1Op, (|x : Self| x ));
-    (Exp2,  exp2,   Exp2Op,  (|x : Self| x.to_expr() * Const(Out::ln_2()) ));
+    (Exp2,  exp2,   Exp2Op,  (|x : Self| Const(Out::ln_2()).to_expr() * x ));
 );
 
 impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym

@@ -293,7 +293,6 @@ where
     }
 }
 
-
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct UnaryPowOp<T>(T);
 impl<T> UnaryOp for UnaryPowOp<T> {}
@@ -346,7 +345,6 @@ where
         UnarySym::new_with_op(UnaryPowOp(r), self.inner()).to_expr()
     }
 }
-
 
 /*
 #[cfg(test)]
