@@ -470,7 +470,7 @@ where
 
     /// Returns [`ZeroSym`](`crate::ZeroSym`).
     /// 
-    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
+    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
     /// let _ = x.diff(0);
@@ -559,7 +559,7 @@ where
     }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
     /// 
-    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
+    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
     /// let _ = x.diff(0);

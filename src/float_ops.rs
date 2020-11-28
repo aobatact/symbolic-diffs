@@ -1,5 +1,5 @@
 //! Module for operating float-like type.
-//! Op structs defined here is used in [`Expr`](crate::Expr) with Out type impliments [`ExNumOps`]
+//! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type impliments [`ExNumOps`]
 //!
 use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
@@ -93,6 +93,7 @@ macro_rules! FlaotSymbols {
         $(
             FloatOps!($t,$me,$op,$ex);
         )*
+        /// Unary float operation symbol.
         pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
         where
             Out: ExNumOps,
