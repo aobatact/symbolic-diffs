@@ -15,7 +15,7 @@ use typenum::{
     True,
 };
 
-pub mod dynamic_sym;
+pub mod dynamic;
 pub mod float_ops;
 ///Set of basic numerical operations
 pub mod ops;
@@ -75,9 +75,13 @@ impl<U: Unsigned, B: Bit> DiffMarker for UInt<U, B> {
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug)]
-pub struct Expr<Sym: Symbol<Out, In>, Out, In = Out>(Sym, PhantomData<Out>, PhantomData<In>);
+pub struct Expr<Sym: Symbol<Out, In>, Out, In: ?Sized = Out>(
+    Sym,
+    PhantomData<Out>,
+    PhantomData<In>,
+);
 
-impl<Sym, O, I> Expr<Sym, O, I>
+impl<Sym, O, I: ?Sized> Expr<Sym, O, I>
 where
     Sym: Symbol<O, I>,
 {
@@ -90,7 +94,7 @@ where
     }
 }
 
-impl<S, O, I> Clone for Expr<S, O, I>
+impl<S, O, I: ?Sized> Clone for Expr<S, O, I>
 where
     S: Symbol<O, I>,
 {
@@ -99,9 +103,9 @@ where
     }
 }
 
-impl<S, O, I> Copy for Expr<S, O, I> where S: Copy + Symbol<O, I> {}
+impl<S, O, I: ?Sized> Copy for Expr<S, O, I> where S: Copy + Symbol<O, I> {}
 
-impl<Sym, O, I> From<Sym> for Expr<Sym, O, I>
+impl<Sym, O, I: ?Sized> From<Sym> for Expr<Sym, O, I>
 where
     Sym: Symbol<O, I>,
 {
@@ -111,7 +115,7 @@ where
     }
 }
 
-impl<Sym, Out: Clone, In> Symbol<Out, In> for Expr<Sym, Out, In>
+impl<Sym, Out: Clone, In: ?Sized> Symbol<Out, In> for Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
 {
@@ -134,7 +138,7 @@ pub trait UnaryOp {}
 
 /// [`Symbol`](`crate::Symbol`) represent Unary Operation.
 #[derive(Debug, PartialEq, Eq)]
-pub struct UnarySym<Op, Sym, Out, In = Out>
+pub struct UnarySym<Op, Sym, Out, In: ?Sized = Out>
 where
     Op: UnaryOp,
     Sym: Symbol<Out, In>,
@@ -145,7 +149,7 @@ where
     pi: PhantomData<In>,
 }
 
-impl<Op, Sym, Out, In> UnarySym<Op, Sym, Out, In>
+impl<Op, Sym, Out, In: ?Sized> UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp,
     Sym: Symbol<Out, In>,
@@ -160,7 +164,7 @@ where
     }
 }
 
-impl<Op, Sym, Out, In> Clone for UnarySym<Op, Sym, Out, In>
+impl<Op, Sym, Out, In: ?Sized> Clone for UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp + Clone,
     Sym: Symbol<Out, In>,
@@ -175,7 +179,7 @@ where
     }
 }
 
-impl<Op, Sym, Out, In> From<Sym> for UnarySym<Op, Sym, Out, In>
+impl<Op, Sym, Out, In: ?Sized> From<Sym> for UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp + Default,
     Sym: Symbol<Out, In>,
@@ -196,7 +200,7 @@ pub trait BinaryOp {}
 
 /// [`Symbol`](`crate::Symbol`) represent Binary Operation.
 #[derive(Debug, PartialEq, Eq)]
-pub struct BinarySym<Op, Sym1, Sym2, Out, In = Out>
+pub struct BinarySym<Op, Sym1, Sym2, Out, In: ?Sized = Out>
 where
     Op: BinaryOp,
     Sym1: Symbol<Out, In>,
@@ -209,7 +213,7 @@ where
     pi: PhantomData<In>,
 }
 
-impl<Op: BinaryOp, Sym1: Symbol<Out, In>, Sym2: Symbol<Out, In>, Out, In>
+impl<Op: BinaryOp, Sym1: Symbol<Out, In>, Sym2: Symbol<Out, In>, Out, In: ?Sized>
     BinarySym<Op, Sym1, Sym2, Out, In>
 {
     pub fn new_with_op(op: Op, sym1: Sym1, sym2: Sym2) -> Self {
@@ -236,7 +240,7 @@ impl<Op: BinaryOp, Sym1: Symbol<Out, In>, Sym2: Symbol<Out, In>, Out, In>
     }
 }
 
-impl<Op, Sym1, Sym2, Out, In> Clone for BinarySym<Op, Sym1, Sym2, Out, In>
+impl<Op, Sym1, Sym2, Out, In: ?Sized> Clone for BinarySym<Op, Sym1, Sym2, Out, In>
 where
     Op: BinaryOp + Clone,
     Sym1: Symbol<Out, In> + Clone,
@@ -247,7 +251,7 @@ where
     }
 }
 
-impl<Op, Sym1, Sym2, Out, In> From<(Sym1, Sym2)> for BinarySym<Op, Sym1, Sym2, Out, In>
+impl<Op, Sym1, Sym2, Out, In: ?Sized> From<(Sym1, Sym2)> for BinarySym<Op, Sym1, Sym2, Out, In>
 where
     Op: BinaryOp + Default,
     Sym1: Symbol<Out, In>,
@@ -267,7 +271,7 @@ where
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ZeroSym;
-impl<Out, In> Symbol<Out, In> for ZeroSym
+impl<Out, In: ?Sized> Symbol<Out, In> for ZeroSym
 where
     Out: Zero,
 {
@@ -296,7 +300,7 @@ where
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Const<T>(pub T);
-impl<Out, In> Symbol<Out, In> for Const<Out>
+impl<Out, In: ?Sized> Symbol<Out, In> for Const<Out>
 where
     Out: Zero + Clone,
 {
@@ -342,7 +346,7 @@ where
     }
 }
 
-impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
+impl<O: Zero, I: ?Sized, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
     type Derivative = Option<Sym::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
         match self {
@@ -361,7 +365,7 @@ impl<O: Zero, I, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
     }
 }
 
-impl<O: Zero, I, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result<Sym1, Sym2> {
+impl<O: Zero, I: ?Sized, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result<Sym1, Sym2> {
     type Derivative = Result<Sym1::Derivative, Sym2::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
         match self {
@@ -391,7 +395,7 @@ pub struct Variable;
 impl<Out, In> Symbol<Out, In> for Variable
 where
     Out: Clone + Zero + Borrow<In>,
-    In: ToOwned<Owned = Out>,
+    In: ToOwned<Owned = Out> + ?Sized,
 {
     type Derivative = ZeroSym;
     /// Returns cloned `value`
