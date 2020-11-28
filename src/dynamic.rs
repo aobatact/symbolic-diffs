@@ -35,8 +35,10 @@ pub trait DynamicSymbolEx<Out, In: ?Sized> {
     fn to_dyn_expr(self) -> Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>;
 }
 
-impl<Out, In: ?Sized> DynamicSymbolEx<Out, In> for Arc<dyn DynamicSymbol<Out, In>>{
-    fn to_dyn_expr(self) -> Expr<std::sync::Arc<(dyn dynamic::DynamicSymbol<Out, In> + 'static)>, Out, In> { 
+impl<Out, In: ?Sized> DynamicSymbolEx<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
+    fn to_dyn_expr(
+        self,
+    ) -> Expr<std::sync::Arc<(dyn dynamic::DynamicSymbol<Out, In> + 'static)>, Out, In> {
         self.into()
     }
 }

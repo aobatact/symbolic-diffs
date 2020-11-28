@@ -29,6 +29,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Add<Output = Out>,
+    In: ?Sized,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -70,6 +71,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Sub<Output = Out>,
+    In: ?Sized,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -111,6 +113,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out>,
+    In: ?Sized,
 {
     type Derivative = AddSym<
         MulSym<Sym1::Derivative, Sym2, Out, In>,
@@ -161,6 +164,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out>,
+    In: ?Sized,
 {
     type Derivative = DivSym<
         SubSym<
@@ -197,6 +201,7 @@ macro_rules! op_expr {
             L: Symbol<O, I>,
             R: Symbol<O, I>,
             O: $( $cond<Output = O> + )* $t<Output = O>,
+            I: ?Sized,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {
@@ -233,6 +238,7 @@ impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Neg<Output = Out>,
+    In: ?Sized,
 {
     type Derivative = NegSym<Sym::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -250,6 +256,7 @@ impl<S, O, I> Neg for Expr<S, O, I>
 where
     S: Symbol<O, I>,
     O: Neg<Output = O>,
+    I: ?Sized,
 {
     type Output = Expr<NegSym<S, O, I>, O, I>;
     fn neg(self) -> Self::Output {
@@ -266,6 +273,7 @@ impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
+    In: ?Sized,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -278,18 +286,18 @@ where
     {
         let one = Out::one();
         let two = one.clone() + one;
-        Const::from(two).to_expr() * self.sym.clone().diff(dm) * self.sym
+        Expr::from(Const::from(two)) * self.sym.clone().diff(dm) * self.sym
     }
 }
 
-impl<Sym, Out, In> Expr<Sym, Out, In>
+impl<Sym, Out, In: ?Sized> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
         let sq: UnarySym<SquareOp, Sym, Out, In> = self.inner().into();
-        sq.to_expr()
+        sq.into()
     }
 }
 
@@ -297,7 +305,7 @@ where
 pub struct UnaryPowOp<T>(T);
 impl<T> UnaryOp for UnaryPowOp<T> {}
 
-impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
+impl<Sym, Out, In: ?Sized, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone,
@@ -311,7 +319,7 @@ where
     where
         Dm: DiffMarker,
     {
-        self.sym.clone().diff(dm).to_expr()
+        Expr::from(self.sym.clone().diff(dm))
             * UnarySym::new_with_op(UnaryPowOp(self.op.0 - T::one()), self.sym)
     }
 }
@@ -332,7 +340,7 @@ where
 */
 
 /// Operation for pow
-impl<Sym, Out, In> Expr<Sym, Out, In>
+impl<Sym, Out, In: ?Sized> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone,
@@ -342,7 +350,7 @@ where
         Out: Pow<T, Output = Out>,
         T: Sub<Output = T> + One + Clone,
     {
-        UnarySym::new_with_op(UnaryPowOp(r), self.inner()).to_expr()
+        UnarySym::new_with_op(UnaryPowOp(r), self.inner()).into()
     }
 }
 

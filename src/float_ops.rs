@@ -97,6 +97,7 @@ macro_rules! FlaotSymbols {
         pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
         where
             Out: ExNumOps,
+            In: ?Sized
         {
             $(
                 fn $me(self) -> UnarySym<$op, Self, Out, In> {
@@ -108,12 +109,13 @@ macro_rules! FlaotSymbols {
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
                   Out: ExNumOps,
+                  In: ?Sized
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
                     //let x : UnarySym<$op, Sym, Out, In> = self.inner().into();
                     //x.to_expr()
-                    self.inner().$me().to_expr()
+                    self.inner().$me().into()
                 }
             )*
         }
@@ -133,6 +135,7 @@ macro_rules! FloatOps {
                 + Sub<Output = Out>
                 + Mul<Output = Out>
                 + Div<Output = Out>,
+            In: ?Sized,
         {
             type Derivative = impl Symbol<Out, In>;
             fn calc_ref(&self, v: &In) -> Out {
@@ -179,6 +182,7 @@ impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
 where
     Sym: Symbol<Out, In>,
     Out: ExNumOps,
+    In: ?Sized,
 {
 }
 
@@ -192,6 +196,7 @@ where
     Sym1: UnaryFloatSymbolEx<Out, In>,
     Sym2: SymbolEx<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
+    In: ?Sized,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -215,6 +220,7 @@ where
     L: UnaryFloatSymbolEx<Out, In>,
     R: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
+    In: ?Sized,
 {
     type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
     fn pow(self, r: R) -> Self::Output {

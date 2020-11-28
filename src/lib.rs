@@ -35,10 +35,13 @@ pub trait Symbol<Out, In: ?Sized>: Clone {
 }
 
 ///Extention for [`Symbol`](`crate::Symbol`).
-pub trait SymbolEx<Out, In>: Symbol<Out, In> {
+pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     /// Shortcut for calculating owned value from [`calc_ref`](`crate::Symbol::calc_ref`).
     #[inline]
-    fn calc(&self, value: In) -> Out {
+    fn calc(&self, value: In) -> Out
+    where
+        In: Sized,
+    {
         self.calc_ref(&value)
     }
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
@@ -47,7 +50,7 @@ pub trait SymbolEx<Out, In>: Symbol<Out, In> {
     }
 }
 
-impl<Sym: Symbol<O, I>, O, I> SymbolEx<O, I> for Sym {}
+impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 
 ///Marker for the dimention of partial differntiation. See [`diff`](`crate::Symbol::diff`)
 pub trait DiffMarker: Copy {
@@ -346,7 +349,12 @@ where
     }
 }
 
-impl<O: Zero, I: ?Sized, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
+impl<O, I, Sym> Symbol<O, I> for Option<Sym>
+where
+    O: Zero,
+    I: ?Sized,
+    Sym: Symbol<O, I>,
+{
     type Derivative = Option<Sym::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
         match self {
@@ -365,7 +373,13 @@ impl<O: Zero, I: ?Sized, Sym: Symbol<O, I>> Symbol<O, I> for Option<Sym> {
     }
 }
 
-impl<O: Zero, I: ?Sized, Sym1: Symbol<O, I>, Sym2: Symbol<O, I>> Symbol<O, I> for Result<Sym1, Sym2> {
+impl<O, I, Sym1, Sym2> Symbol<O, I> for Result<Sym1, Sym2>
+where
+    O: Zero,
+    I: ?Sized,
+    Sym1: Symbol<O, I>,
+    Sym2: Symbol<O, I>,
+{
     type Derivative = Result<Sym1::Derivative, Sym2::Derivative>;
     fn calc_ref(&self, value: &I) -> O {
         match self {
