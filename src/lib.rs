@@ -18,6 +18,7 @@ use typenum::{
 pub mod float_ops;
 ///Set of basic numerical operations
 pub mod ops;
+pub mod dynamic_sym;
 
 ///Expression symbol for calculating and differentiation.
 pub trait Symbol<Out, In: ?Sized>: Clone {
