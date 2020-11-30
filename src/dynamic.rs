@@ -23,11 +23,9 @@ impl<Out, In: ?Sized> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
     fn calc_ref(&self, value: &In) -> Out {
         self.as_ref().calc_dyn(value)
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
-        self.as_ref().diff_dyn(dm.dim())
+        self.as_ref().diff_dyn(dm)
     }
 }
 

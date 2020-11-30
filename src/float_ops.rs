@@ -143,9 +143,7 @@ macro_rules! FloatOps {
                 let inner = self.sym.calc_ref(v);
                 inner.$me()
             }
-            fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-            where
-                Dm: DiffMarker,
+            fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
             {
                 let df = self.sym.clone().diff(dm).to_expr();
                 let y = $ex(self);
@@ -203,9 +201,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         let sym1 = self.sym1.clone();
         let sym2 = self.sym2.clone();
@@ -244,8 +240,8 @@ mod tests {
         let v1 = arr![f32; 2., 3.];
         assert_eq!(2.0_f32.exp(), y.calc(v));
         assert_eq!(4.0_f32.exp(), y.calc(v1));
-        assert_eq!(2.0_f32.exp() * 2.0, y.clone().diff(U0::new()).calc(v));
-        assert_eq!(4.0_f32.exp() * 2.0, y.diff(U0::new()).calc(v1));
+        assert_eq!(2.0_f32.exp() * 2.0, y.clone().diff(0).calc(v));
+        assert_eq!(4.0_f32.exp() * 2.0, y.diff(0).calc(v1));
     }
 
     #[test]
@@ -259,9 +255,9 @@ mod tests {
         assert_eq!(4.0_f32.sin(), xsin.calc(v1));
         assert_eq!(2.0_f32.cos(), xcos.calc(v));
         assert_eq!(4.0_f32.cos(), xcos.calc(v1));
-        assert_eq!(2.0 * xcos.calc(v), xsin.clone().diff(U0::new()).calc(v));
-        assert_eq!(2.0 * xcos.calc(v1), xsin.clone().diff(U0::new()).calc(v1));
-        assert_eq!(-2.0 * xsin.calc(v), xcos.clone().diff(U0::new()).calc(v));
-        assert_eq!(-2.0 * xsin.calc(v1), xcos.diff(U0::new()).calc(v1));
+        assert_eq!(2.0 * xcos.calc(v), xsin.clone().diff(0).calc(v));
+        assert_eq!(2.0 * xcos.calc(v1), xsin.clone().diff(0).calc(v1));
+        assert_eq!(-2.0 * xsin.calc(v), xcos.clone().diff(0).calc(v));
+        assert_eq!(-2.0 * xsin.calc(v1), xcos.diff(0).calc(v1));
     }
 }

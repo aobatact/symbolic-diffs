@@ -11,7 +11,7 @@ use typenum::{
     marker_traits::{Bit, Unsigned},
     operator_aliases::Le,
     type_operators::{IsLess, Same},
-    uint::{UInt, UTerm},
+    //uint::{UInt, UTerm},
     True,
 };
 
@@ -28,10 +28,8 @@ pub trait Symbol<Out, In: ?Sized>: Clone {
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
-    /// Use usize 0 or [`U0::new()`](`typenum::UTerm::new`) if there is only one variable.
-    fn diff<Dm>(self, dm: Dm) -> Self::Derivative
-    where
-        Dm: DiffMarker;
+    /// Use usize 0 or [`0`](`typenum::UTerm::new`) if there is only one variable.
+    fn diff(self, dm: usize) -> Self::Derivative;
 }
 
 ///Extention for [`Symbol`](`crate::Symbol`).
@@ -52,6 +50,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 
+/*
 ///Marker for the dimention of partial differntiation. See [`diff`](`crate::Symbol::diff`)
 pub trait DiffMarker: Copy {
     fn dim(self) -> usize;
@@ -74,6 +73,7 @@ impl<U: Unsigned, B: Bit> DiffMarker for UInt<U, B> {
         <Self as Unsigned>::USIZE
     }
 }
+*/
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
@@ -128,9 +128,7 @@ where
         self.0.calc_ref(value)
     }
     #[inline]
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         self.0.diff(dm).into()
     }
@@ -287,9 +285,7 @@ where
 
     ///Returns Zero Symbol.
     #[inline]
-    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         ZeroSym
     }
@@ -317,9 +313,7 @@ where
 
     ///Returns Zero Symbol.
     #[inline]
-    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         ZeroSym
     }
@@ -343,9 +337,7 @@ where
         self.0.clone()
     }
     /// returns [`ZeroSym`](`crate::ZeroSym`)
-    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         ZeroSym
     }
@@ -392,9 +384,7 @@ where
             None => O::zero(),
         }
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative
     {
         match self {
             Some(sym) => Some(sym.diff(dm)),
@@ -417,9 +407,7 @@ where
             Err(sym) => sym.calc_ref(value),
         }
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<O, I>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative
     {
         match self {
             Ok(sym) => Ok(sym.diff(dm)),
@@ -462,11 +450,9 @@ where
     /// //use Expr for convinience
     /// let y = Variable.to_expr();
     /// assert_eq!(1,y.clone().diff(0).calc(3));
-    /// assert_eq!(1,y.diff(U0::new()).calc(4));
+    /// assert_eq!(1,y.diff(0).calc(4));
     /// ```
-    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         OneSym
     }
@@ -531,15 +517,11 @@ where
     /// # use generic_array::*;
     /// let v = arr![i32; 2,3];
     /// let x = DimVariable::<U0>::new().to_expr();
-    /// assert_eq!(1,x.diff(U0::new()).calc(v));
-    /// assert_eq!(1,x.diff(U1::new()).calc(v));
+    /// assert_eq!(1,x.diff(0).calc(v));
     /// let y = DimVariable::<U1>::new().to_expr();
-    /// assert_eq!(1,y.diff(U0::new()).calc(v));
-    /// assert_eq!(1,y.diff(U1::new()).calc(v));
+    /// assert_eq!(1,y.diff(0).calc(v));
     /// ```
-    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, _dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     {
         OneSym
     }
@@ -619,18 +601,16 @@ where
     /// # use generic_array::*;
     /// let v = arr![i32; 2,3];
     /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
-    /// assert_eq!(8,x.diff(U0::new()).calc(v));
-    /// assert_eq!(0,x.diff(U1::new()).calc(v));
+    /// assert_eq!(8,x.diff(0).calc(v));
+    /// assert_eq!(0,x.diff(1).calc(v));
     /// //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
     /// let y = x.inner_borrow().change_dim::<U1>().to_expr();
-    /// assert_eq!(0,y.diff(U0::new()).calc(v));
-    /// assert_eq!(12,y.diff(U1::new()).calc(v));
+    /// assert_eq!(0,y.diff(0).calc(v));
+    /// assert_eq!(12,y.diff(1).calc(v));
     /// ```
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     {
-        if dm.dim() == Dim::USIZE && !self.1.is_zero() {
+        if dm == Dim::USIZE && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
                 self.1.clone() - Degree::one(),

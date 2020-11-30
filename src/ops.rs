@@ -16,11 +16,11 @@ impl BinaryOp for AddOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 2, 3];
 /// assert_eq!(5,xy.calc(v));
-/// assert_eq!(4,xy.clone().diff(U0::new()).calc(v));
-/// assert_eq!(3,xy.clone().diff(U1::new()).calc(v));
+/// assert_eq!(4,xy.clone().diff(0).calc(v));
+/// assert_eq!(3,xy.clone().diff(1).calc(v));
 /// assert_eq!(17,xy.calc(v1));
-/// assert_eq!(8,xy.clone().diff(U0::new()).calc(v1));
-/// assert_eq!(3,xy.diff(U1::new()).calc(v1));
+/// assert_eq!(8,xy.clone().diff(0).calc(v1));
+/// assert_eq!(3,xy.diff(1).calc(v1));
 /// ```
 pub type AddSym<Sym1, Sym2, Out, In> = BinarySym<AddOp, Sym1, Sym2, Out, In>;
 
@@ -35,9 +35,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         BinarySym::new(self.sym1.diff(dm), self.sym2.diff(dm))
     }
@@ -58,11 +56,11 @@ impl BinaryOp for SubOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 2, 3];
 /// assert_eq!(-1,xy.calc(v));
-/// assert_eq!(4,xy.clone().diff(U0::new()).calc(v));
-/// assert_eq!(-3,xy.clone().diff(U1::new()).calc(v));
+/// assert_eq!(4,xy.clone().diff(0).calc(v));
+/// assert_eq!(-3,xy.clone().diff(1).calc(v));
 /// assert_eq!(-1,xy.calc(v1));
-/// assert_eq!(8,xy.clone().diff(U0::new()).calc(v1));
-/// assert_eq!(-3,xy.diff(U1::new()).calc(v1));
+/// assert_eq!(8,xy.clone().diff(0).calc(v1));
+/// assert_eq!(-3,xy.diff(1).calc(v1));
 /// ```
 pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
 
@@ -77,9 +75,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         BinarySym::new(self.sym1.diff(dm), self.sym2.diff(dm))
     }
@@ -100,11 +96,11 @@ impl BinaryOp for MulOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 2, 3];
 /// assert_eq!(6,xy.calc(v));
-/// assert_eq!(12,xy.clone().diff(U0::new()).calc(v));
-/// assert_eq!(6,xy.clone().diff(U1::new()).calc(v));
+/// assert_eq!(12,xy.clone().diff(0).calc(v));
+/// assert_eq!(6,xy.clone().diff(1).calc(v));
 /// assert_eq!(72,xy.calc(v1));
-/// assert_eq!(72,xy.clone().diff(U0::new()).calc(v1));
-/// assert_eq!(24,xy.diff(U1::new()).calc(v1));
+/// assert_eq!(72,xy.clone().diff(0).calc(v1));
+/// assert_eq!(24,xy.diff(1).calc(v1));
 /// ```
 pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
 
@@ -124,9 +120,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         let sym2diff = self.sym2.clone().diff(dm);
         BinarySym::new(
@@ -151,11 +145,11 @@ impl BinaryOp for DivOp {}
 /// let v = arr![i32; 1, 1];
 /// let v1 = arr![i32; 6, 3];
 /// assert_eq!(2,xy.calc(v));
-/// assert_eq!(4,xy.clone().diff(U0::new()).calc(v));
-/// assert_eq!(-2,xy.clone().diff(U1::new()).calc(v));
+/// assert_eq!(4,xy.clone().diff(0).calc(v));
+/// assert_eq!(-2,xy.clone().diff(1).calc(v));
 /// assert_eq!(24,xy.calc(v1));
-/// assert_eq!(8,xy.clone().diff(U0::new()).calc(v1));
-/// assert_eq!(-8,xy.diff(U1::new()).calc(v1));
+/// assert_eq!(8,xy.clone().diff(0).calc(v1));
+/// assert_eq!(-8,xy.diff(1).calc(v1));
 /// ```
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
 
@@ -180,9 +174,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) / self.sym2.calc_ref(value)
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         BinarySym::new(
             BinarySym::new(
@@ -244,9 +236,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         -self.sym.calc_ref(value)
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         self.sym.diff(dm).into()
     }
@@ -280,9 +270,7 @@ where
         let x = self.sym.calc_ref(value);
         x.clone() * x
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         let one = Out::one();
         let two = one.clone() + one;
@@ -315,9 +303,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym.calc_ref(value).pow(self.op.0.clone())
     }
-    fn diff<Dm>(self, dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
-    where
-        Dm: DiffMarker,
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
     {
         Expr::from(self.sym.clone().diff(dm))
             * UnarySym::new_with_op(UnaryPowOp(self.op.0 - T::one()), self.sym)
