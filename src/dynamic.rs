@@ -61,7 +61,7 @@ pub struct DynBinarySym<Op: BinaryOp, Out, In>(
 #[cfg(test)]
 mod tests {
     use crate::dynamic::*;
-    use crate::float_ops::*;
+    //use crate::float_ops::*;
     //use crate::*;
     use generic_array::*;
     use std::sync::Arc;
@@ -74,7 +74,7 @@ mod tests {
         let y = x + x;
         assert_eq!(2, y.calc_dyn(&1));
         let z = y.diff_dyn(0);
-        assert_eq!(0, z.calc_dyn(&1));
+        assert_eq!(2, z.calc_dyn(&2));
 
         let x: Expr<Variable, f32> = Variable.into();
         let w = Arc::new(x);
@@ -88,10 +88,12 @@ mod tests {
         let y = x + w.clone();
         assert_eq!(2., y.calc_dyn(&1.));
         let z = y.diff_dyn(0);
-        assert_eq!(0., z.calc_dyn(&1.));
+        assert_eq!(2., z.calc_dyn(&1.));
 
         let wexp = w.exp();
         assert_eq!(1_f32.exp(), wexp.calc_dyn(&1.));
+        assert_eq!(1_f32.exp(), wexp.calc_ref(&1.));
+        assert_eq!(1_f32.exp(), wexp.diff(0).calc_ref(&1.));
     }
 
     #[test]
@@ -106,5 +108,6 @@ mod tests {
 
         let a = z.to_expr() + x;
         assert_eq!(64., a.calc_dyn(&v));
+        assert_eq!(64., a.calc_ref(&v));
     }
 }

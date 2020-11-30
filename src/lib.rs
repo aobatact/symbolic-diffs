@@ -295,6 +295,36 @@ where
     }
 }
 
+
+/// [`Symbol`](`crate::Symbol`) represent Zero.
+/// ```
+/// # use symbolic_diffs::*;
+/// let x = ZeroSym;
+/// assert_eq!(0,x.calc(6));
+/// ```
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct OneSym;
+impl<Out, In: ?Sized> Symbol<Out, In> for OneSym
+where
+    Out: Zero + One,
+{
+    type Derivative = ZeroSym;
+    ///Returns zero.
+    #[inline]
+    fn calc_ref(&self, _value: &In) -> Out {
+        Out::one()
+    }
+
+    ///Returns Zero Symbol.
+    #[inline]
+    fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
+    where
+        Dm: DiffMarker,
+    {
+        ZeroSym
+    }
+}
+
 ///[`Symbol`](`crate::Symbol`) represent an constant value.
 /// ```
 /// # use symbolic_diffs::*;
@@ -408,10 +438,10 @@ where
 pub struct Variable;
 impl<Out, In> Symbol<Out, In> for Variable
 where
-    Out: Clone + Zero + Borrow<In>,
+    Out: Clone + Zero + One + Borrow<In>,
     In: ToOwned<Owned = Out> + ?Sized,
 {
-    type Derivative = ZeroSym;
+    type Derivative = OneSym;
     /// Returns cloned `value`
     fn calc_ref(&self, value: &In) -> Out {
         value.to_owned()
@@ -428,17 +458,17 @@ where
     /// # use symbolic_diffs::*;
     /// # use typenum::U0;
     /// let x = Variable;
-    /// assert_eq!(0,<Variable as Symbol<i32,i32>>::diff(x,1).calc(2));
+    /// assert_eq!(1,<Variable as Symbol<i32,i32>>::diff(x,1).calc(2));
     /// //use Expr for convinience
     /// let y = Variable.to_expr();
-    /// assert_eq!(0,y.clone().diff(0).calc(3));
-    /// assert_eq!(0,y.diff(U0::new()).calc(4));
+    /// assert_eq!(1,y.clone().diff(0).calc(3));
+    /// assert_eq!(1,y.diff(U0::new()).calc(4));
     /// ```
     fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<Out, In>>::Derivative
     where
         Dm: DiffMarker,
     {
-        ZeroSym
+        OneSym
     }
 }
 
@@ -476,12 +506,12 @@ where
 
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
-    T: Clone + Zero,
+    T: Clone + Zero + One,
     Dim: Unsigned + IsLess<N>,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
-    type Derivative = ZeroSym;
+    type Derivative = OneSym;
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         v[Dim::USIZE].clone()
@@ -501,17 +531,17 @@ where
     /// # use generic_array::*;
     /// let v = arr![i32; 2,3];
     /// let x = DimVariable::<U0>::new().to_expr();
-    /// assert_eq!(0,x.diff(U0::new()).calc(v));
-    /// assert_eq!(0,x.diff(U1::new()).calc(v));
+    /// assert_eq!(1,x.diff(U0::new()).calc(v));
+    /// assert_eq!(1,x.diff(U1::new()).calc(v));
     /// let y = DimVariable::<U1>::new().to_expr();
-    /// assert_eq!(0,y.diff(U0::new()).calc(v));
-    /// assert_eq!(0,y.diff(U1::new()).calc(v));
+    /// assert_eq!(1,y.diff(U0::new()).calc(v));
+    /// assert_eq!(1,y.diff(U1::new()).calc(v));
     /// ```
     fn diff<Dm>(self, _dm: Dm) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
     where
         Dm: DiffMarker,
     {
-        ZeroSym
+        OneSym
     }
 }
 
