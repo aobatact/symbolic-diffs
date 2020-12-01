@@ -143,8 +143,7 @@ macro_rules! FloatOps {
                 let inner = self.sym.calc_ref(v);
                 inner.$me()
             }
-            fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-            {
+            fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
                 let df = self.sym.clone().diff(dm).to_expr();
                 let y = $ex(self);
                 df * y
@@ -201,8 +200,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
     }
-    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-    {
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let sym1 = self.sym1.clone();
         let sym2 = self.sym2.clone();
         let s2dif = sym2.clone().diff(dm);

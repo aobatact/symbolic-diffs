@@ -28,7 +28,7 @@ pub trait Symbol<Out, In: ?Sized>: Clone {
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
-    /// Use usize 0 or [`0`](`typenum::UTerm::new`) if there is only one variable.
+    /// Use usize 0 if there is only one variable.
     fn diff(self, dm: usize) -> Self::Derivative;
 }
 
@@ -128,8 +128,7 @@ where
         self.0.calc_ref(value)
     }
     #[inline]
-    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-    {
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         self.0.diff(dm).into()
     }
 }
@@ -285,12 +284,10 @@ where
 
     ///Returns Zero Symbol.
     #[inline]
-    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-    {
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
     }
 }
-
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```
@@ -313,8 +310,7 @@ where
 
     ///Returns Zero Symbol.
     #[inline]
-    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-    {
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
     }
 }
@@ -337,8 +333,7 @@ where
         self.0.clone()
     }
     /// returns [`ZeroSym`](`crate::ZeroSym`)
-    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-    {
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
     }
 }
@@ -384,8 +379,7 @@ where
             None => O::zero(),
         }
     }
-    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative
-    {
+    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative {
         match self {
             Some(sym) => Some(sym.diff(dm)),
             None => None,
@@ -407,8 +401,7 @@ where
             Err(sym) => sym.calc_ref(value),
         }
     }
-    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative
-    {
+    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative {
         match self {
             Ok(sym) => Ok(sym.diff(dm)),
             Err(sym) => Err(sym.diff(dm)),
@@ -452,8 +445,7 @@ where
     /// assert_eq!(1,y.clone().diff(0).calc(3));
     /// assert_eq!(1,y.diff(0).calc(4));
     /// ```
-    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative
-    {
+    fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         OneSym
     }
 }
@@ -521,8 +513,7 @@ where
     /// let y = DimVariable::<U1>::new().to_expr();
     /// assert_eq!(1,y.diff(0).calc(v));
     /// ```
-    fn diff(self, _dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
-    {
+    fn diff(self, _dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative {
         OneSym
     }
 }
@@ -608,8 +599,7 @@ where
     /// assert_eq!(0,y.diff(0).calc(v));
     /// assert_eq!(12,y.diff(1).calc(v));
     /// ```
-    fn diff(self, dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative
-    {
+    fn diff(self, dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative {
         if dm == Dim::USIZE && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
