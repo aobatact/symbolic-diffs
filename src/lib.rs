@@ -22,6 +22,7 @@ pub mod ops;
 
 ///Expression symbol for calculating and differentiation.
 pub trait Symbol<Out, In: ?Sized>: Clone {
+    /// return type for `diff`
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
@@ -49,31 +50,6 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
 }
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
-
-/*
-///Marker for the dimention of partial differntiation. See [`diff`](`crate::Symbol::diff`)
-pub trait DiffMarker: Copy {
-    fn dim(self) -> usize;
-}
-
-impl DiffMarker for usize {
-    fn dim(self) -> usize {
-        self
-    }
-}
-
-impl DiffMarker for UTerm {
-    fn dim(self) -> usize {
-        <Self as Unsigned>::USIZE
-    }
-}
-
-impl<U: Unsigned, B: Bit> DiffMarker for UInt<U, B> {
-    fn dim(self) -> usize {
-        <Self as Unsigned>::USIZE
-    }
-}
-*/
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]

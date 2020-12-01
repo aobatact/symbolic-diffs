@@ -28,33 +28,6 @@ impl<Out, In: ?Sized> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
     }
 }
 
-/*
-pub trait DynamicSymbolEx<Out, In: ?Sized> {
-    fn to_dyn_expr(self) -> Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>;
-}
-
-impl<Out, In: ?Sized> DynamicSymbolEx<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
-    fn to_dyn_expr(self) -> Expr<Arc<(dyn DynamicSymbol<Out, In>)>, Out, In> {
-        self.into()
-    }
-}
-
-pub struct DynUnarySym<Op: UnaryOp, Out, In>(
-    Op,
-    Arc<dyn DynamicSymbol<Out, In>>,
-    PhantomData<Out>,
-    PhantomData<In>,
-);
-
-pub struct DynBinarySym<Op: BinaryOp, Out, In>(
-    Op,
-    Arc<dyn DynamicSymbol<Out, In>>,
-    Arc<dyn DynamicSymbol<Out, In>>,
-    PhantomData<Out>,
-    PhantomData<In>,
-);
-*/
-
 #[cfg(test)]
 mod tests {
     use crate::dynamic::*;

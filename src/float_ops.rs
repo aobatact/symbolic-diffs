@@ -94,6 +94,7 @@ macro_rules! FlaotSymbols {
             FloatOps!($t,$me,$op,$ex);
         )*
         /// Unary float operation symbol.
+        /// This is for internal use.
         pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
         where
             Out: ExNumOps,
