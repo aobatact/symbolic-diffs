@@ -1,6 +1,9 @@
 use crate::*;
 use std::sync::Arc;
 
+/// Trait for Symbol using dynamic. 
+/// 
+/// This is separate from `Symbol` for some reason.
 pub trait DynamicSymbol<Out, In: ?Sized> {
     fn calc_dyn(&self, value: &In) -> Out;
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;

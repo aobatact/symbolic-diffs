@@ -1,3 +1,5 @@
+//! Set of basic numerical operations
+//! These are internaly used from `Expr`.  
 use super::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -250,6 +252,8 @@ where
 }
 
 /// [`UnaryOp`](`crate::UnaryOp`) marker for `x` [*](`core::ops::Mul`)`x`
+/// 
+/// This is same as `x * x`, but for optimization used in [`UnaryFloatSymbolEx`](`crate::float_ops::UnaryFloatSymbolEx`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SquareOp;
 impl UnaryOp for SquareOp {}
@@ -283,6 +287,26 @@ where
     }
 }
 
+/// [`UnaryOp`](`crate::UnaryOp`) marker for [`pow`](`num_traits::pow::Pow`)
+/// 
+/// Unlike other [`UnaryOp`](`crate::UnaryOp`), this has an field to represent the pow.
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = Variable.to_expr();
+/// let x4 = x.pow_t(4_u8);
+/// assert_eq!(16,x4.calc(2));
+/// ```
+/// Since i32 doesn't impliment [`Pow`](`num_traits::pow::Pow`)`<i32>`, should use i8 as power.
+/// ```compile_fail
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = Variable.to_expr();
+/// let x4 = x.pow_t(4);
+/// assert_eq!(16,x4.calc(2));
+/// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct UnaryPowOp<T>(T);
 impl<T> UnaryOp for UnaryPowOp<T> {}

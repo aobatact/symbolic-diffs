@@ -17,7 +17,6 @@ use typenum::{
 
 pub mod dynamic;
 pub mod float_ops;
-///Set of basic numerical operations
 pub mod ops;
 
 ///Expression symbol for calculating and differentiation.
@@ -556,7 +555,7 @@ where
     }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
     ///
-    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
+    /// There are some limitation for using [`diff`](`crate::Symbol::diff`) directory, so you can't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
     /// let _ = x.diff(0);
@@ -570,6 +569,8 @@ where
     /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
     /// assert_eq!(8,x.diff(0).calc(v));
     /// assert_eq!(0,x.diff(1).calc(v));
+    /// assert_eq!(4,x.diff(0).diff(0).calc(v));
+    /// assert_eq!(0,x.diff(0).diff(1).calc(v));
     /// //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
     /// let y = x.inner_borrow().change_dim::<U1>().to_expr();
     /// assert_eq!(0,y.diff(0).calc(v));
