@@ -252,7 +252,7 @@ where
 }
 
 /// [`UnaryOp`](`crate::UnaryOp`) marker for `x` [*](`core::ops::Mul`)`x`
-/// 
+///
 /// This is same as `x * x`, but for optimization used in [`UnaryFloatSymbolEx`](`crate::float_ops::UnaryFloatSymbolEx`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SquareOp;
@@ -288,7 +288,7 @@ where
 }
 
 /// [`UnaryOp`](`crate::UnaryOp`) marker for [`pow`](`num_traits::pow::Pow`)
-/// 
+///
 /// Unlike other [`UnaryOp`](`crate::UnaryOp`), this has an field to represent the pow.
 /// ```
 /// # use symbolic_diffs::*;
