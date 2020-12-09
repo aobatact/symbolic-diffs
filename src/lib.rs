@@ -17,13 +17,21 @@ use typenum::{
     True,
 };
 
-//pub mod dynamic;
+pub mod dynamic;
 pub mod float_ops;
 pub mod ops;
 
+/// Trait for Symbol using dynamic.
 pub trait DynamicSymbol<Out, In: ?Sized>: Any + Send + Sync {
+    /// Calculate the value of this expression.
+    /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
+    /// This is for dynamic and must be same as [`calc_ref`](`crate::Symbol::calc_ref`)
     fn calc_dyn(&self, value: &In) -> Out;
+    /// Get the partial derivative of this expression.
+    /// Dm is the marker of which variable for differentiation.
+    /// Use usize 0 if there is only one variable.
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
+    fn as_any(&'static self) -> &(dyn Any + Send + Sync);
 }
 
 ///Expression symbol for calculating and differentiation.
@@ -57,6 +65,69 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 
+impl<Out, In> DynamicSymbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
+where
+    Out: Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        (*self).calc_dyn(value)
+    }
+    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        (*self).diff_dyn(dim)
+    }
+    fn as_any(&'static self) -> &(dyn Any + Send + Sync) {
+        self
+    }
+}
+
+impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
+where
+    Out: Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.as_ref().calc_dyn(value)
+    }
+    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        self.as_ref().diff_dyn(dim)
+    }
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+}
+
+impl<Out, In> Symbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
+where
+    Out: Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
+    #[inline]
+    fn calc_ref(&self, value: &In) -> Out {
+        self.calc_dyn(value)
+    }
+    #[inline]
+    fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        self.diff_dyn(dim)
+    }
+}
+
+
+impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
+where
+    Out: Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
+    #[inline]
+    fn calc_ref(&self, value: &In) -> Out {
+        self.calc_dyn(value)
+    }
+    #[inline]
+    fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        self.diff_dyn(dim)
+    }
+}
+
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug)]
@@ -70,6 +141,12 @@ impl<Sym, O, I: ?Sized> Expr<Sym, O, I>
 where
     Sym: Symbol<O, I>,
 {
+    /*
+    fn new(sym : Sym) -> Self {
+        Expr(sym, PhantomData, PhantomData)
+    }
+    */
+
     pub fn inner(self) -> Sym {
         self.0
     }
@@ -129,8 +206,10 @@ where
     }
     #[inline]
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().0.diff(dm))
+        self.0.diff_dyn(dm)
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
@@ -202,12 +281,16 @@ where
     In: ?Sized,
     Self: Symbol<Out, In>,
 {
+    #[inline]
     fn calc_dyn(&self, value: &In) -> Out {
         self.calc_ref(value)
     }
+    #[inline]
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
@@ -286,12 +369,16 @@ where
     In: ?Sized,
     Self: Symbol<Out, In>,
 {
+    #[inline]
     fn calc_dyn(&self, value: &In) -> Out {
         self.calc_ref(value)
     }
+    #[inline]
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
@@ -307,12 +394,16 @@ where
     Out: Zero,
     In: ?Sized,
 {
+    #[inline]
     fn calc_dyn(&self, _value: &In) -> Out {
         Out::zero()
     }
+    #[inline]
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(ZeroSym)
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<Out, In> Symbol<Out, In> for ZeroSym
@@ -353,6 +444,8 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(ZeroSym)
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<Out, In> Symbol<Out, In> for OneSym
@@ -385,7 +478,7 @@ pub struct Const<T>(pub T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
     Out: Any + Send + Sync + Zero + Clone,
-    In: ?Sized + Any + Send + Sync,
+    In: ?Sized,
 {
     fn calc_dyn(&self, _value: &In) -> Out {
         self.0.clone()
@@ -393,12 +486,14 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(ZeroSym)
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<Out, In> Symbol<Out, In> for Const<Out>
 where
     Out: Zero + Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    In: ?Sized,
 {
     type Derivative = ZeroSym;
     /// returns self.
@@ -457,6 +552,8 @@ where
             None => Arc::new(ZeroSym),
         }
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<O, I, Sym> Symbol<O, I> for Option<Sym>
@@ -499,6 +596,8 @@ where
             Err(sym) => sym.diff_dyn(dm),
         }
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<Out, In, Sym1, Sym2> Symbol<Out, In> for Result<Sym1, Sym2>
@@ -539,6 +638,8 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(OneSym)
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 impl<Out, In> Symbol<Out, In> for Variable
 where
@@ -619,6 +720,8 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
         Arc::new(OneSym)
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
@@ -705,7 +808,15 @@ where
 {
     fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
-        v[Dim::USIZE].clone()
+        if !self.0.is_zero() {
+            if self.1.is_one() {
+                self.0.clone() * v[Dim::USIZE].clone()
+            } else {
+                self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+            }
+        } else {
+            T::zero()
+        }
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
         if dm == Dim::USIZE && !self.1.is_zero() {
@@ -718,6 +829,8 @@ where
             Arc::new(ZeroSym)
         }
     }
+    
+    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
 }
 
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
@@ -730,17 +843,9 @@ where
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
+    #[inline]
     fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        debug_assert!(<Le<Dim, N> as Bit>::BOOL);
-        if !self.0.is_zero() {
-            if self.1.is_one() {
-                self.0.clone() * v[Dim::USIZE].clone()
-            } else {
-                self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
-            }
-        } else {
-            T::zero()
-        }
+        self.calc_dyn(v)
     }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
     ///
