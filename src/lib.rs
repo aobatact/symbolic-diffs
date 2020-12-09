@@ -58,6 +58,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
         self.calc_ref(&value)
     }
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
+    #[inline]
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
     }
@@ -65,6 +66,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 
+/*
 impl<Out, In> DynamicSymbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
 where
     Out: Clone + Any + Send + Sync,
@@ -80,6 +82,7 @@ where
         self
     }
 }
+*/
 
 impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
@@ -97,6 +100,7 @@ where
     }
 }
 
+/*
 impl<Out, In> Symbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
 where
     Out: Clone + Any + Send + Sync,
@@ -112,6 +116,7 @@ where
         self.diff_dyn(dim)
     }
 }
+*/
 
 impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
@@ -485,7 +490,7 @@ where
 /// assert_eq!(3,x.calc(6));
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct Const<T>(pub T);
+pub struct Const<T>(pub(crate) T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
     Out: Any + Send + Sync + Zero + Clone,
