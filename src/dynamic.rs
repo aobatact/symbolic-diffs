@@ -1,9 +1,125 @@
-use crate::ops::AddSym;
-use crate::ops::AddOp;
+use crate::ops::*;
 use crate::*;
 use core::any::Any;
-use core::ops::Add;
+use core::ops::{Add, Div, Mul, Sub};
 use std::sync::Arc;
+
+pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In> + 'static>);
+
+impl<Out, In> DynamicSymbol<Out, In> for DynExpr<Out, In>
+where
+    Out: Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.0.calc_dyn(value)
+    }
+    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {
+        self.0.diff_dyn(dim)
+    }
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
+}
+
+impl<Out, In> Symbol<Out, In> for DynExpr<Out, In>
+where
+    Out: Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Derivative = DynExpr<Out, In>;
+    fn calc_ref(&self, value: &In) -> Out {
+        self.calc_dyn(value)
+    }
+    fn diff(self, dim: usize) -> DynExpr<Out, In> {
+        DynExpr(self.diff_dyn(dim))
+    }
+}
+
+impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
+    fn clone(&self) -> Self {
+        DynExpr(self.0.clone())
+    }
+}
+
+impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In>
+where
+    Out: Clone + Any + Send + Sync + Add<Out, Output = Out>,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Output = DynExpr<Out, In>;
+    fn add(self, other: Arc<dyn DynamicSymbol<Out, In>>) -> DynExpr<Out, In> {
+        let l = self.0.as_ref().as_any();
+        if l.downcast_ref::<ZeroSym>().is_some() {
+            DynExpr(other)
+        } else if other.as_ref().as_any().downcast_ref::<ZeroSym>().is_some() {
+            self
+        } else {
+            DynExpr(Arc::new(AddSym::new(self.0, other)))
+        }
+    }
+}
+
+impl<Out, In> Sub<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In>
+where
+    Out: Clone + Any + Send + Sync + Sub<Out, Output = Out>,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Output = DynExpr<Out, In>;
+    fn sub(self, other: Arc<dyn DynamicSymbol<Out, In>>) -> DynExpr<Out, In> {
+        let l = self.0.as_ref().as_any();
+        if l.downcast_ref::<ZeroSym>().is_some() {
+            DynExpr(other)
+        } else if other.as_ref().as_any().downcast_ref::<ZeroSym>().is_some() {
+            self
+        } else {
+            DynExpr(Arc::new(SubSym::new(self.0, other)))
+        }
+    }
+}
+
+impl<Out, In> Mul<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In>
+where
+    Out: Clone + Any + Send + Sync + Add<Out, Output = Out> + Mul<Out, Output = Out>,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Output = DynExpr<Out, In>;
+    fn mul(self, other: Arc<dyn DynamicSymbol<Out, In>>) -> DynExpr<Out, In> {
+        let l = self.0.as_ref().as_any();
+        let r = other.as_ref().as_any();
+        if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
+            self
+        } else if r.downcast_ref::<ZeroSym>().is_some() || l.downcast_ref::<OneSym>().is_some() {
+            DynExpr(other)
+        } else {
+            DynExpr(Arc::new(MulSym::new(self.0, other)))
+        }
+    }
+}
+
+impl<Out, In> Div<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In>
+where
+    Out: Clone
+        + Any
+        + Send
+        + Sync
+        + Add<Out, Output = Out>
+        + Mul<Out, Output = Out>
+        + Sub<Out, Output = Out>
+        + Div<Out, Output = Out>,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Output = DynExpr<Out, In>;
+    fn div(self, other: Arc<dyn DynamicSymbol<Out, In>>) -> DynExpr<Out, In> {
+        let l = self.0.as_ref().as_any();
+        let r = other.as_ref().as_any();
+        if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
+            self
+        } else {
+            DynExpr(Arc::new(MulSym::new(self.0, other)))
+        }
+    }
+}
 
 /*
 //needs specialization
@@ -26,9 +142,9 @@ impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbo
 
 #[cfg(test)]
 mod tests {
-    use crate::dynamic::*;
+    //use crate::dynamic::*;
     //use crate::float_ops::*;
-    //use crate::*;
+    use crate::*;
     use generic_array::*;
     use std::sync::Arc;
     use typenum::*;

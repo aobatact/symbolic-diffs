@@ -31,7 +31,7 @@ pub trait DynamicSymbol<Out, In: ?Sized>: Any + Send + Sync {
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
-    fn as_any(&'static self) -> &(dyn Any + Send + Sync);
+    fn as_any(&self) -> &(dyn Any + Send + Sync);
 }
 
 ///Expression symbol for calculating and differentiation.
@@ -76,7 +76,7 @@ where
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         (*self).diff_dyn(dim)
     }
-    fn as_any(&'static self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
         self
     }
 }
@@ -92,7 +92,9 @@ where
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         self.as_ref().diff_dyn(dim)
     }
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Out, In> Symbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
@@ -110,7 +112,6 @@ where
         self.diff_dyn(dim)
     }
 }
-
 
 impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
@@ -208,8 +209,10 @@ where
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         self.0.diff_dyn(dm)
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
@@ -289,8 +292,10 @@ where
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
@@ -377,8 +382,10 @@ where
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
@@ -402,8 +409,10 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(ZeroSym)
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Out, In> Symbol<Out, In> for ZeroSym
@@ -444,8 +453,10 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(ZeroSym)
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Out, In> Symbol<Out, In> for OneSym
@@ -486,8 +497,10 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(ZeroSym)
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Out, In> Symbol<Out, In> for Const<Out>
@@ -552,8 +565,10 @@ where
             None => Arc::new(ZeroSym),
         }
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<O, I, Sym> Symbol<O, I> for Option<Sym>
@@ -596,8 +611,10 @@ where
             Err(sym) => sym.diff_dyn(dm),
         }
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Out, In, Sym1, Sym2> Symbol<Out, In> for Result<Sym1, Sym2>
@@ -638,8 +655,10 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(OneSym)
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 impl<Out, In> Symbol<Out, In> for Variable
 where
@@ -720,8 +739,10 @@ where
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
         Arc::new(OneSym)
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
@@ -829,8 +850,10 @@ where
             Arc::new(ZeroSym)
         }
     }
-    
-    fn as_any(&'static self) -> &'static (dyn Any + Send + Sync) { self }
+
+    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+        self
+    }
 }
 
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
