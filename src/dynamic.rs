@@ -7,7 +7,7 @@ use std::sync::Arc;
 /// Trait for Symbol using dynamic.
 ///
 /// This is separate from `Symbol` for some reason.
-pub trait DynamicSymbol<Out, In: ?Sized> {
+pub trait DynamicSymbol<Out, In: ?Sized>  {
     fn calc_dyn(&self, value: &In) -> Out;
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
 }
@@ -35,6 +35,22 @@ where
     In: ?Sized,
 {
     fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>
+    {
+        self
+    }
+    fn as_expr(self: Arc<Self>) -> DynExpr<Out, In>
+    {
+        DynExpr(self, PhantomData, PhantomData)
+    }
+}
+
+
+/*
+impl<Out: 'static, In> DynamicSymbolEx<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
+where
+    In: ?Sized + 'static,
+{
+    fn as_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>
     where
         Self: Any + Send + Sync,
     {
@@ -47,6 +63,8 @@ where
         DynExpr(self, PhantomData, PhantomData)
     }
 }
+*/
+
 
 impl<Out, In: ?Sized> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>> {
     type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
@@ -73,6 +91,7 @@ impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
 impl<Out: 'static, In: 'static + ?Sized> Symbol<Out, In> for DynExpr<Out, In>
 where
     Self: Sync + Send + Sized,
+    
 {
     type Derivative = DynExpr<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {

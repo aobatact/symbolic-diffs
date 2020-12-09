@@ -11,7 +11,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts{
+                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any + Send + Sync{
             $(
                 fn $m(self) -> Self;
             )*
@@ -97,8 +97,8 @@ macro_rules! FlaotSymbols {
         /// This is for internal use.
         pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
         where
-            Out: ExNumOps,
-            In: ?Sized
+            Out: ExNumOps + Any + Send + Sync,
+            In: ?Sized + Any + Send + Sync
         {
             $(
                 fn $me(self) -> UnarySym<$op, Self, Out, In> {
@@ -111,7 +111,7 @@ macro_rules! FlaotSymbols {
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
                   Out: ExNumOps,
-                  In: ?Sized
+                  In: ?Sized + Any + Send + Sync
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
@@ -137,7 +137,7 @@ macro_rules! FloatOps {
                 + Sub<Output = Out>
                 + Mul<Output = Out>
                 + Div<Output = Out>,
-            In: ?Sized,
+            In: ?Sized + Any + Send + Sync,
         {
             type Derivative = impl Symbol<Out, In>;
             fn calc_ref(&self, v: &In) -> Out {
@@ -181,7 +181,7 @@ impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
 where
     Sym: Symbol<Out, In>,
     Out: ExNumOps,
-    In: ?Sized,
+    In: ?Sized + Any + Send + Sync,
 {
 }
 
@@ -195,7 +195,7 @@ where
     Sym1: UnaryFloatSymbolEx<Out, In>,
     Sym2: SymbolEx<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized,
+    In: ?Sized + Any + Send + Sync,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -216,7 +216,7 @@ where
     L: UnaryFloatSymbolEx<Out, In>,
     R: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized,
+    In: ?Sized + Any + Send + Sync,
 {
     type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
     fn pow(self, r: R) -> Self::Output {
