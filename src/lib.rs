@@ -1,7 +1,8 @@
 #![feature(type_alias_impl_trait)]
 
-use core::any::Any;
+use crate::dynamic::DynExpr;
 use core::{
+    any::Any,
     borrow::Borrow,
     marker::PhantomData,
     ops::{Mul, Sub},
@@ -13,7 +14,6 @@ use typenum::{
     marker_traits::{Bit, Unsigned},
     operator_aliases::Le,
     type_operators::{IsLess, Same},
-    //uint::{UInt, UTerm},
     True,
 };
 
@@ -61,6 +61,9 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     #[inline]
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
+    }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr(Arc::new(self))
     }
 }
 

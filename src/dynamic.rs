@@ -1,11 +1,26 @@
-use crate::float_ops::ExNumConsts;
+use crate::float_ops::*;
 use crate::ops::*;
 use crate::*;
-use core::any::Any;
-use core::ops::{Add, Div, Mul, Neg, Sub};
+use core::{
+    any::Any,
+    //fmt::{Debug, Error, Formatter},
+    ops::{Add, Div, Mul, Neg, Sub},
+};
 use std::sync::Arc;
 
 pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
+
+impl<Out, In: ?Sized> DynExpr<Out, In> {
+    pub fn inner_any(&self) -> &(dyn Any + Send + Sync) {
+        self.0.as_ref().as_any()
+    }
+    pub fn try_downcast<T>(&self) -> Option<&T>
+    where
+        T: Any,
+    {
+        self.inner_any().downcast_ref::<T>()
+    }
+}
 
 impl<Out, In> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
@@ -45,7 +60,7 @@ impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
 
 impl<Out, In> Add<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Add<Out, Output = Out> + Zero,
+    Out: Clone + Any + Send + Sync + Add<Output = Out> + Zero,
     In: ?Sized + Any + Send + Sync,
 {
     type Output = DynExpr<Out, In>;
@@ -62,7 +77,7 @@ where
 
 impl<Out, In> Sub<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Sub<Out, Output = Out> + Zero,
+    Out: Clone + Any + Send + Sync + Sub<Output = Out> + Zero,
     In: ?Sized + Any + Send + Sync,
 {
     type Output = DynExpr<Out, In>;
@@ -79,13 +94,13 @@ where
 
 impl<Out, In> Mul<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Add<Out, Output = Out> + Mul<Out, Output = Out>,
+    Out: Clone + Any + Send + Sync + Add<Output = Out> + Mul<Output = Out>,
     In: ?Sized + Any + Send + Sync,
 {
     type Output = DynExpr<Out, In>;
     fn mul(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
-        let l = self.0.as_ref().as_any();
-        let r = other.0.as_ref().as_any();
+        let l = self.inner_any();
+        let r = other.inner_any();
         if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
             self
         } else if r.downcast_ref::<ZeroSym>().is_some() || l.downcast_ref::<OneSym>().is_some() {
@@ -102,16 +117,16 @@ where
         + Any
         + Send
         + Sync
-        + Add<Out, Output = Out>
-        + Mul<Out, Output = Out>
-        + Sub<Out, Output = Out>
-        + Div<Out, Output = Out>,
+        + Add<Output = Out>
+        + Mul<Output = Out>
+        + Sub<Output = Out>
+        + Div<Output = Out>,
     In: ?Sized + Any + Send + Sync,
 {
     type Output = DynExpr<Out, In>;
     fn div(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
-        let l = self.0.as_ref().as_any();
-        let r = other.0.as_ref().as_any();
+        let l = self.inner_any();
+        let r = other.inner_any();
         if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
             self
         } else {
@@ -130,7 +145,7 @@ where
         DynExpr(Arc::new(ZeroSym))
     }
     fn is_zero(&self) -> bool {
-        self.0.as_ref().as_any().downcast_ref::<ZeroSym>().is_some()
+        self.try_downcast::<ZeroSym>().is_some()
     }
 }
 
@@ -143,7 +158,9 @@ where
     fn one() -> Self {
         DynExpr(Arc::new(OneSym))
     }
-    //fn is_one(&self) -> bool { self.0.as_ref().as_any().downcast_ref::<OneSym>().is_some() }
+    fn is_one(&self) -> bool {
+        self.try_downcast::<OneSym>().is_some()
+    }
 }
 
 impl<Out, In> Neg for DynExpr<Out, In>
@@ -161,33 +178,60 @@ where
     }
 }
 
+macro_rules! as_dyn_expr {
+    (c $($m:ident),* $(,)*) => {
+        $(
+        fn $m() -> Self {
+            Const(Out::$m()).to_dyn_expr()
+        })*
+    };
+    (f $($m:ident),* $(,)*) => {
+        $(
+        fn $m(self) -> Self {
+            <Self as UnaryFloatSymbolEx<Out, In>>::$m(self).to_dyn_expr()
+        }
+        )*
+    };
+}
+
 impl<Out, In> ExNumConsts for DynExpr<Out, In>
 where
     Out: ExNumConsts + Any + Send + Sync + Clone + Zero,
 {
-    fn e() -> Self {
-        DynExpr(Arc::new(Const(Out::e())))
+    as_dyn_expr!(c e, ln_10, ln_2, log10_e, log10_2, log2_e, log2_10, two);
+}
+
+impl<Out, In> ExNumOps for DynExpr<Out, In>
+where
+    Out: ExNumOps + Any + Send + Sync + Clone,
+    In: Any + Send + Sync,
+{
+    as_dyn_expr!(f exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, recip, exp_m1, exp2, ln_1p, log2, log10,);
+}
+
+impl<Out, In> Pow<DynExpr<Out, In>> for DynExpr<Out, In>
+where
+    Out: ExNumOps + Any + Send + Sync + Clone + Pow<Out, Output = Out>,
+    In: ?Sized + Any + Send + Sync,
+{
+    type Output = DynExpr<Out, In>;
+    fn pow(self, r: DynExpr<Out, In>) -> DynExpr<Out, In> {
+        BinarySym::new_with_op(PowOp, self.0, r).to_dyn_expr()
     }
-    fn ln_10() -> Self {
-        DynExpr(Arc::new(Const(Out::ln_10())))
-    }
-    fn ln_2() -> Self {
-        DynExpr(Arc::new(Const(Out::ln_2())))
-    }
-    fn log10_e() -> Self {
-        DynExpr(Arc::new(Const(Out::log10_e())))
-    }
-    fn log10_2() -> Self {
-        DynExpr(Arc::new(Const(Out::log10_2())))
-    }
-    fn log2_10() -> Self {
-        DynExpr(Arc::new(Const(Out::log2_10())))
-    }
-    fn log2_e() -> Self {
-        DynExpr(Arc::new(Const(Out::log2_e())))
-    }
-    fn two() -> Self {
-        DynExpr(Arc::new(Const(Out::two())))
+}
+
+/// Operation for pow
+impl<Out, In> DynExpr<Out, In>
+where
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any + Send + Sync,
+    In: ?Sized + Any + Send + Sync,
+{
+    pub fn pow_t<T>(self, r: T) -> DynExpr<Out, In>
+    where
+        Out: Pow<T, Output = Out>,
+        T: Sub<Output = T> + One + Clone + Any + Send + Sync + Default,
+    {
+        UnarySym::new_with_op(UnaryPowOp(r), self.0).to_dyn_expr()
     }
 }
 
@@ -198,7 +242,7 @@ impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbo
 {
     type Output = Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>;
     fn add(self, other : Arc<dyn DynamicSymbol<Out, In>>) -> Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In> {
-        let l = self.0.as_ref().as_any();
+        let l = self.inner_any();
         if l.downcast_ref::<ZeroSym>().is_some() {
             other.to_expr()
         } else if other.as_ref().as_any().downcast_ref::<ZeroSym>().is_some() {

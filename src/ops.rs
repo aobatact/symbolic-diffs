@@ -315,7 +315,7 @@ where
 /// assert_eq!(16,x4.calc(2));
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
-pub struct UnaryPowOp<T>(T);
+pub struct UnaryPowOp<T>(pub (crate) T);
 impl<T> UnaryOp for UnaryPowOp<T> {}
 
 impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
