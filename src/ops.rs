@@ -30,8 +30,8 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -69,8 +69,8 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Sub<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -108,8 +108,8 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Mul<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = AddSym<
         MulSym<Sym1::Derivative, Sym2, Out, In>,
@@ -160,10 +160,8 @@ where
         + Sub<Output = Out>
         + Mul<Output = Out>
         + Div<Output = Out>
-        + Any
-        + Send
-        + Sync,
-    In: ?Sized + Any + Send + Sync,
+        + Any,
+    In: ?Sized + Any,
 {
     type Derivative = DivSym<
         SubSym<
@@ -196,8 +194,8 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O> + Any + Send + Sync,
-            I: ?Sized + Any + Send + Sync,
+            O: $( $cond<Output = O> + )* $t<Output = O> + Any,
+            I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {
@@ -233,8 +231,8 @@ pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
 impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Neg<Output = Out> + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Neg<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = NegSym<Sym::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -248,8 +246,8 @@ where
 impl<S, O, I> Neg for Expr<S, O, I>
 where
     S: Symbol<O, I>,
-    O: Neg<Output = O> + Any + Send + Sync,
-    I: ?Sized + Any + Send + Sync,
+    O: Neg<Output = O> + Any,
+    I: ?Sized + Any,
 {
     type Output = Expr<NegSym<S, O, I>, O, I>;
     fn neg(self) -> Self::Output {
@@ -267,8 +265,8 @@ impl UnaryOp for SquareOp {}
 impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -285,8 +283,8 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
         let sq: UnarySym<SquareOp, Sym, Out, In> = self.inner().into();
@@ -321,9 +319,9 @@ impl<T> UnaryOp for UnaryPowOp<T> {}
 impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone + Any + Send + Sync,
-    T: Sub<Output = T> + One + Clone + Default + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone + Any,
+    T: Sub<Output = T> + One + Clone + Default + Any,
+    In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -354,13 +352,13 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any,
+    In: ?Sized + Any,
 {
     pub fn pow_t<T>(self, r: T) -> Expr<UnarySym<UnaryPowOp<T>, Sym, Out, In>, Out, In>
     where
         Out: Pow<T, Output = Out>,
-        T: Sub<Output = T> + One + Clone + Any + Send + Sync + Default,
+        T: Sub<Output = T> + One + Clone + Any + Default,
     {
         UnarySym::new_with_op(UnaryPowOp(r), self.inner()).into()
     }

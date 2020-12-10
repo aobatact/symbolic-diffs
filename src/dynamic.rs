@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 impl<Out, In: ?Sized> DynExpr<Out, In> {
-    pub fn inner_any(&self) -> &(dyn Any + Send + Sync) {
+    pub fn inner_any(&self) -> &(dyn Any) {
         self.0.as_ref().as_any()
     }
     pub fn try_downcast<T>(&self) -> Option<&T>
@@ -24,8 +24,8 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
 
 impl<Out, In> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
         self.0.calc_dyn(value)
@@ -33,15 +33,15 @@ where
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {
         self.0.diff_dyn(dim)
     }
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
 
 impl<Out, In> Symbol<Out, In> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     type Derivative = DynExpr<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -60,8 +60,8 @@ impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
 
 impl<Out, In> Add<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Add<Output = Out> + Zero,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any + Add<Output = Out> + Zero,
+    In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn add(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -77,8 +77,8 @@ where
 
 impl<Out, In> Sub<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Sub<Output = Out> + Zero,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any + Sub<Output = Out> + Zero,
+    In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn sub(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -94,8 +94,8 @@ where
 
 impl<Out, In> Mul<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Add<Output = Out> + Mul<Output = Out>,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any + Add<Output = Out> + Mul<Output = Out>,
+    In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn mul(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -115,13 +115,11 @@ impl<Out, In> Div<DynExpr<Out, In>> for DynExpr<Out, In>
 where
     Out: Clone
         + Any
-        + Send
-        + Sync
         + Add<Output = Out>
         + Mul<Output = Out>
         + Sub<Output = Out>
         + Div<Output = Out>,
-    In: ?Sized + Any + Send + Sync,
+    In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn div(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -137,8 +135,8 @@ where
 
 impl<Out, In> Zero for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Add<Output = Out> + Zero,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any + Add<Output = Out> + Zero,
+    In: ?Sized + Any,
 {
     #[inline]
     fn zero() -> Self {
@@ -151,8 +149,8 @@ where
 
 impl<Out, In> One for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Add<Output = Out> + Zero + One,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any + Add<Output = Out> + Zero + One,
+    In: ?Sized + Any,
 {
     #[inline]
     fn one() -> Self {
@@ -165,8 +163,8 @@ where
 
 impl<Out, In> Neg for DynExpr<Out, In>
 where
-    Out: Clone + Any + Send + Sync + Neg<Output = Out> + Zero,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any + Neg<Output = Out> + Zero,
+    In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn neg(self) -> DynExpr<Out, In> {
@@ -196,23 +194,23 @@ macro_rules! as_dyn_expr {
 
 impl<Out, In> ExNumConsts for DynExpr<Out, In>
 where
-    Out: ExNumConsts + Any + Send + Sync + Clone + Zero,
+    Out: ExNumConsts + Any + Clone + Zero,
 {
     as_dyn_expr!(c e, ln_10, ln_2, log10_e, log10_2, log2_e, log2_10, two);
 }
 
 impl<Out, In> ExNumOps for DynExpr<Out, In>
 where
-    Out: ExNumOps + Any + Send + Sync + Clone,
-    In: Any + Send + Sync,
+    Out: ExNumOps + Any + Clone,
+    In: Any,
 {
     as_dyn_expr!(f exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, recip, exp_m1, exp2, ln_1p, log2, log10,);
 }
 
 impl<Out, In> Pow<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: ExNumOps + Any + Send + Sync + Clone + Pow<Out, Output = Out>,
-    In: ?Sized + Any + Send + Sync,
+    Out: ExNumOps + Any + Clone + Pow<Out, Output = Out>,
+    In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn pow(self, r: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -223,13 +221,13 @@ where
 /// Operation for pow
 impl<Out, In> DynExpr<Out, In>
 where
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any,
+    In: ?Sized + Any,
 {
     pub fn pow_t<T>(self, r: T) -> DynExpr<Out, In>
     where
         Out: Pow<T, Output = Out>,
-        T: Sub<Output = T> + One + Clone + Any + Send + Sync + Default,
+        T: Sub<Output = T> + One + Clone + Any + Default,
     {
         UnarySym::new_with_op(UnaryPowOp(r), self.0).to_dyn_expr()
     }
@@ -238,7 +236,7 @@ where
 /*
 //needs specialization
 impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>
-    where Out : Clone + Any + Send + Sync + Add<Out, Output = Out>,In : ?Sized  + Any + Send + Sync,
+    where Out : Clone + Any + Add<Out, Output = Out>,In : ?Sized  + Any,
 {
     type Output = Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>;
     fn add(self, other : Arc<dyn DynamicSymbol<Out, In>>) -> Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In> {

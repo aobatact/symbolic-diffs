@@ -22,7 +22,7 @@ pub mod float_ops;
 pub mod ops;
 
 /// Trait for Symbol using dynamic.
-pub trait DynamicSymbol<Out, In: ?Sized>: Any + Send + Sync {
+pub trait DynamicSymbol<Out, In: ?Sized>: Any {
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
     /// This is for dynamic and must be same as [`calc_ref`](`crate::Symbol::calc_ref`)
@@ -31,7 +31,7 @@ pub trait DynamicSymbol<Out, In: ?Sized>: Any + Send + Sync {
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
-    fn as_any(&self) -> &(dyn Any + Send + Sync);
+    fn as_any(&self) -> &(dyn Any);
 }
 
 ///Expression symbol for calculating and differentiation.
@@ -72,8 +72,8 @@ impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 /*
 impl<Out, In> DynamicSymbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
 where
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
         (*self).calc_dyn(value)
@@ -81,7 +81,7 @@ where
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         (*self).diff_dyn(dim)
     }
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -89,8 +89,8 @@ where
 
 impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
         self.as_ref().calc_dyn(value)
@@ -98,7 +98,7 @@ where
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         self.as_ref().diff_dyn(dim)
     }
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -106,8 +106,8 @@ where
 /*
 impl<Out, In> Symbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
 where
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
     #[inline]
@@ -123,8 +123,8 @@ where
 
 impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
     #[inline]
@@ -189,8 +189,8 @@ where
 impl<Sym, Out, In> Symbol<Out, In> for Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     type Derivative = Expr<Sym::Derivative, Out, In>;
     #[inline]
@@ -206,8 +206,8 @@ where
 impl<Sym, Out: Clone, In> DynamicSymbol<Out, In> for Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Clone + Any + Send + Sync,
-    In: ?Sized + Any + Send + Sync,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     #[inline]
     fn calc_dyn(&self, value: &In) -> Out {
@@ -218,7 +218,7 @@ where
         self.0.diff_dyn(dm)
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -301,7 +301,7 @@ where
         Arc::new(self.clone().diff(dm))
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -391,7 +391,7 @@ where
         Arc::new(self.clone().diff(dm))
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -418,7 +418,7 @@ where
         Arc::new(ZeroSym)
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -462,7 +462,7 @@ where
         Arc::new(ZeroSym)
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -496,7 +496,7 @@ where
 pub struct Const<T>(pub(crate) T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
-    Out: Any + Send + Sync + Zero + Clone,
+    Out: Any + Zero + Clone,
     In: ?Sized,
 {
     fn calc_dyn(&self, _value: &In) -> Out {
@@ -506,14 +506,14 @@ where
         Arc::new(ZeroSym)
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
 
 impl<Out, In> Symbol<Out, In> for Const<Out>
 where
-    Out: Zero + Clone + Any + Send + Sync,
+    Out: Zero + Clone + Any,
     In: ?Sized,
 {
     type Derivative = ZeroSym;
@@ -574,7 +574,7 @@ where
         }
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -620,7 +620,7 @@ where
         }
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -664,7 +664,7 @@ where
         Arc::new(OneSym)
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -736,7 +736,7 @@ where
 impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + IsLess<N> + Any + Send + Sync,
+    Dim: Unsigned + IsLess<N> + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -748,7 +748,7 @@ where
         Arc::new(OneSym)
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -756,7 +756,7 @@ where
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + IsLess<N> + Any + Send + Sync,
+    Dim: Unsigned + IsLess<N> + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -829,9 +829,9 @@ where
 
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any + Send + Sync,
-    Dim: Unsigned + IsLess<N> + Any + Send + Sync,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Send + Sync,
+    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + IsLess<N> + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -859,16 +859,16 @@ where
         }
     }
 
-    fn as_any(&self) -> &(dyn Any + Send + Sync) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
 
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any + Send + Sync,
-    Dim: Unsigned + IsLess<N> + Any + Send + Sync,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Send + Sync,
+    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + IsLess<N> + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
