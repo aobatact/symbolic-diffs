@@ -17,9 +17,10 @@ use typenum::{
     True,
 };
 
+#[doc(hidden)]
 pub mod dynamic;
-pub mod float_ops;
-pub mod ops;
+mod float_ops;
+mod ops;
 
 /// Trait for Symbol using dynamic.
 pub trait DynamicSymbol<Out, In: ?Sized>: Any {

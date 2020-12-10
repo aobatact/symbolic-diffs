@@ -1,3 +1,5 @@
+/// currently not working.
+
 use crate::float_ops::*;
 use crate::ops::*;
 use crate::*;
@@ -24,7 +26,7 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
 
 impl<Out, In> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
-    Out: Clone + Any,
+    Out: Any,
     In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
@@ -40,7 +42,7 @@ where
 
 impl<Out, In> Symbol<Out, In> for DynExpr<Out, In>
 where
-    Out: Clone + Any,
+    Out: Any,
     In: ?Sized + Any,
 {
     type Derivative = DynExpr<Out, In>;
@@ -94,7 +96,7 @@ where
 
 impl<Out, In> Mul<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Add<Output = Out> + Mul<Output = Out>,
+    Out: Any + Add<Output = Out> + Mul<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -106,7 +108,13 @@ where
         } else if r.downcast_ref::<ZeroSym>().is_some() || l.downcast_ref::<OneSym>().is_some() {
             other
         } else {
-            DynExpr(Arc::new(MulSym::new(self.0, other)))
+            let m = BinarySym::new_with_op(MulOp,self, other);
+            //m.to_dyn_expr()
+            panic!("mul is not working for DynExpr")
+            //let arc = Arc::new(m);
+            //DynExpr(arc)
+            //DynExpr(Arc::new())
+            //panic!("mul");
         }
     }
 }
@@ -114,10 +122,11 @@ where
 impl<Out, In> Div<DynExpr<Out, In>> for DynExpr<Out, In>
 where
     Out:
-        Clone + Any + Add<Output = Out> + Mul<Output = Out> + Sub<Output = Out> + Div<Output = Out>,
+        Clone + Any + Add<Output = Out> + Mul<Output = Out> + Sub<Output = Out> + Div<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
+    #[inline(never)]
     fn div(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
         let l = self.inner_any();
         let r = other.inner_any();
@@ -247,10 +256,11 @@ impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbo
     }
 }
 */
+pub type DynExprMV<T, Dim> = DynExpr<T, GenericArray<T, Dim>>;
 
 #[cfg(test)]
 mod tests {
-    //use crate::dynamic::*;
+    use crate::dynamic::*;
     //use crate::float_ops::*;
     use crate::*;
     use generic_array::*;
@@ -299,5 +309,23 @@ mod tests {
         let a = z.to_expr() + x;
         assert_eq!(64., a.calc_dyn(&v));
         assert_eq!(64., a.calc_ref(&v));
+    }
+
+    #[test]
+    fn dynexpr() {
+        let v1 = arr![f32; 2., 3.];
+        let x: DynExprMV<f32, U2> = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        //let x = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        let y: DynExprMV<f32, U2> = DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
+        assert_eq!(8., x.calc(v1));
+        let xpy = x.clone() + y.clone();
+        assert_eq!(-1., xpy.calc(v1));
+        let xsy = x.clone() - y.clone();
+        assert_eq!(17., xsy.calc(v1));
+        //let xy = x * y;
+        //assert_eq!(-72., xy.calc(v1));
+        //let xdy = x.clone() / y.clone();
+        //assert_eq!(-(8.0/9.0), xdy.calc(v1));
+        //let xe = float_ops::ExNumOps::exp(x);
     }
 }
