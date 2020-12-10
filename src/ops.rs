@@ -156,11 +156,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out>
-        + Sub<Output = Out>
-        + Mul<Output = Out>
-        + Div<Output = Out>
-        + Any,
+    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out> + Any,
     In: ?Sized + Any,
 {
     type Derivative = DivSym<
@@ -313,7 +309,7 @@ where
 /// assert_eq!(16,x4.calc(2));
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
-pub struct UnaryPowOp<T>(pub (crate) T);
+pub struct UnaryPowOp<T>(pub(crate) T);
 impl<T> UnaryOp for UnaryPowOp<T> {}
 
 impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>

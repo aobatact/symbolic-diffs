@@ -113,12 +113,8 @@ where
 
 impl<Out, In> Div<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone
-        + Any
-        + Add<Output = Out>
-        + Mul<Output = Out>
-        + Sub<Output = Out>
-        + Div<Output = Out>,
+    Out:
+        Clone + Any + Add<Output = Out> + Mul<Output = Out> + Sub<Output = Out> + Div<Output = Out>,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;

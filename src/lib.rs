@@ -829,7 +829,7 @@ where
 
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: Unsigned + IsLess<N> + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
@@ -838,9 +838,10 @@ where
     fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         if !self.0.is_zero() {
-            if self.1.is_one() {
+            /*if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()
-            } else {
+            } else */
+            {
                 self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
             }
         } else {
@@ -848,15 +849,18 @@ where
         }
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
-        if dm == Dim::USIZE && !self.1.is_zero() {
-            Arc::new(DimMonomial::<Dim, _, _>(
-                self.0.clone() * T::from(self.1.clone()),
-                self.1.clone() - Degree::one(),
-                PhantomData,
-            ))
-        } else {
-            Arc::new(ZeroSym)
+        if dm == Dim::USIZE {
+            if self.1.is_one() {
+                return Arc::new(Const::from(T::one()));
+            } else if !self.1.is_zero() {
+                return Arc::new(DimMonomial::<Dim, _, _>(
+                    self.0.clone() * T::from(self.1.clone()),
+                    self.1.clone() - Degree::one(),
+                    PhantomData,
+                ));
+            }
         }
+        Arc::new(ZeroSym)
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -866,7 +870,7 @@ where
 
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: Unsigned + IsLess<N> + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
