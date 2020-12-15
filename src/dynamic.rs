@@ -108,9 +108,10 @@ where
         } else if r.downcast_ref::<ZeroSym>().is_some() || l.downcast_ref::<OneSym>().is_some() {
             other
         } else {
-            let m = BinarySym::new_with_op(MulOp,self, other);
-            //m.to_dyn_expr()
-            panic!("mul is not working for DynExpr")
+            //let m = BinarySym::new_with_op(MulOp,self, other);
+            let m = MulSym::new(self,other);
+            //panic!("mul is not working for DynExpr");
+            m.to_dyn_expr()
             //let arc = Arc::new(m);
             //DynExpr(arc)
             //DynExpr(Arc::new())
@@ -327,5 +328,8 @@ mod tests {
         //let xdy = x.clone() / y.clone();
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
         //let xe = float_ops::ExNumOps::exp(x);
+
+    let mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
+        let add = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
     }
 }

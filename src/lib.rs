@@ -18,9 +18,11 @@ use typenum::{
 };
 
 #[doc(hidden)]
-pub mod dynamic;
+mod dynamic;
 mod float_ops;
 mod ops;
+
+pub use float_ops::{ExNumOps, ExNumConsts};
 
 /// Trait for Symbol using dynamic.
 pub trait DynamicSymbol<Out, In: ?Sized>: Any {
@@ -63,8 +65,12 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
     }
+    #[doc(hidden)]
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
-        DynExpr(Arc::new(self))
+        let arc = Arc::new(self);
+        //panic!();
+        DynExpr(arc)
+        //DynExpr(Arc::new(ZeroSym))
     }
 }
 
