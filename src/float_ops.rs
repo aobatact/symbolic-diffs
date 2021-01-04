@@ -190,6 +190,29 @@ where
 pub struct PowOp;
 impl BinaryOp for PowOp {}
 
+impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
+where
+    Sym1: UnaryFloatSymbolEx<Out, In>,
+    Sym2: SymbolEx<Out, In>,
+    Out: ExNumOps + Pow<Out, Output = Out>,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.calc_ref(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        let sym1 = self.sym1.clone();
+        let sym2 = self.sym2.clone();
+        let s2dif = sym2.clone().diff(dm);
+        let a = sym1.clone().diff(dm).to_expr() * sym2 / sym1.clone();
+        let b = sym1.ln().to_expr() * s2dif;
+        Arc::new(((a + b.inner()) * self.clone()).inner())
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
 where
     Sym1: UnaryFloatSymbolEx<Out, In>,

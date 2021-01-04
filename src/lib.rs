@@ -1,6 +1,5 @@
-#![feature(type_alias_impl_trait)]
+#![feature(type_alias_impl_trait, min_specialization)]
 
-use crate::dynamic::DynExpr;
 use core::{
     any::Any,
     borrow::Borrow,
@@ -22,7 +21,7 @@ mod dynamic;
 mod float_ops;
 mod ops;
 
-pub use float_ops::{ExNumOps, ExNumConsts};
+pub use float_ops::{ExNumConsts, ExNumOps};
 
 /// Trait for Symbol using dynamic.
 pub trait DynamicSymbol<Out, In: ?Sized>: Any {
@@ -96,7 +95,7 @@ where
 
 impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
-    Out: Clone + Any,
+    Out: Any,
     In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
@@ -130,7 +129,7 @@ where
 
 impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
-    Out: Clone + Any,
+    Out: Any,
     In: ?Sized + Any,
 {
     type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
@@ -143,6 +142,8 @@ where
         self.diff_dyn(dim)
     }
 }
+
+pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
@@ -300,15 +301,15 @@ where
     Self: Symbol<Out, In>,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
+    default fn calc_dyn(&self, value: &In) -> Out {
         self.calc_ref(value)
     }
     #[inline]
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    default fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
 
-    fn as_any(&self) -> &(dyn Any) {
+    default fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
@@ -381,6 +382,7 @@ where
     }
 }
 
+/*
 impl<Op, Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<Op, Sym1, Sym2, Out, In>
 where
     Op: BinaryOp + Default,
@@ -390,18 +392,19 @@ where
     Self: Symbol<Out, In>,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
+    default fn calc_dyn(&self, value: &In) -> Out {
         self.calc_ref(value)
     }
     #[inline]
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    default fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
 
-    fn as_any(&self) -> &(dyn Any) {
+    default fn as_any(&self) -> &(dyn Any) {
         self
     }
 }
+*/
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```

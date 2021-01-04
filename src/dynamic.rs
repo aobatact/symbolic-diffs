@@ -1,5 +1,4 @@
 /// currently not working.
-
 use crate::float_ops::*;
 use crate::ops::*;
 use crate::*;
@@ -9,8 +8,6 @@ use core::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 use std::sync::Arc;
-
-pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 impl<Out, In: ?Sized> DynExpr<Out, In> {
     pub fn inner_any(&self) -> &(dyn Any) {
@@ -109,7 +106,7 @@ where
             other
         } else {
             //let m = BinarySym::new_with_op(MulOp,self, other);
-            let m = MulSym::new(self,other);
+            let m = MulSym::new(self, other);
             //panic!("mul is not working for DynExpr");
             m.to_dyn_expr()
             //let arc = Arc::new(m);
@@ -122,8 +119,13 @@ where
 
 impl<Out, In> Div<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out:
-        Clone + Any + Add<Output = Out> + Mul<Output = Out> + Sub<Output = Out> + Div<Output = Out> + Zero,
+    Out: Clone
+        + Any
+        + Add<Output = Out>
+        + Mul<Output = Out>
+        + Sub<Output = Out>
+        + Div<Output = Out>
+        + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -323,13 +325,13 @@ mod tests {
         assert_eq!(-1., xpy.calc(v1));
         let xsy = x.clone() - y.clone();
         assert_eq!(17., xsy.calc(v1));
-        //let xy = x * y;
+        //let xy = x.clone() * y.clone();
         //assert_eq!(-72., xy.calc(v1));
         //let xdy = x.clone() / y.clone();
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
         //let xe = float_ops::ExNumOps::exp(x);
 
-    let mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
-        let add = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
+        //let mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
+        //let add = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
     }
 }
