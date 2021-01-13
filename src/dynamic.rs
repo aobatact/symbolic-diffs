@@ -136,7 +136,7 @@ where
         if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
             self
         } else {
-            DynExpr(Arc::new(MulSym::new(self.0, other)))
+            DynExpr(Arc::new(DivSym::new(self.0, other)))
         }
     }
 }
@@ -317,17 +317,19 @@ mod tests {
     #[test]
     fn dynexpr() {
         let v1 = arr![f32; 2., 3.];
-        let x: DynExprMV<f32, U2> = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        let x: DynExpr<f32, GenericArray<f32, U2>> =
+            DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
         //let x = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
-        let y: DynExprMV<f32, U2> = DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
+        let y: DynExpr<f32, GenericArray<f32, U2>> =
+            DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
         assert_eq!(8., x.calc(v1));
         let xpy = x.clone() + y.clone();
         assert_eq!(-1., xpy.calc(v1));
         let xsy = x.clone() - y.clone();
         assert_eq!(17., xsy.calc(v1));
-        //let xy = x.clone() * y.clone();
-        //assert_eq!(-72., xy.calc(v1));
-        //let xdy = x.clone() / y.clone();
+        // let xy = x.clone() * y.clone();
+        // assert_eq!(-72., xy.calc(v1));
+        // let xdy = x.clone() / y.clone();
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
         //let xe = float_ops::ExNumOps::exp(x);
 

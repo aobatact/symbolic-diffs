@@ -763,6 +763,24 @@ where
     }
 }
 
+impl<Dim, T> DynamicSymbol<T, [T]> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: Unsigned + Any,
+{
+    fn calc_dyn(&self, v: &[T]) -> T {
+        v[Dim::USIZE].clone()
+    }
+
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
+        Arc::new(OneSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
@@ -795,6 +813,21 @@ where
     /// assert_eq!(1,y.diff(0).calc(v));
     /// ```
     fn diff(self, _dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative {
+        OneSym
+    }
+}
+
+impl<Dim, T> Symbol<T, [T]> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: Unsigned + Any,
+{
+    type Derivative = OneSym;
+    fn calc_ref(&self, v: &[T]) -> T {
+        v[Dim::USIZE].clone()
+    }
+
+    fn diff(self, _dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         OneSym
     }
 }
@@ -916,6 +949,70 @@ where
     /// assert_eq!(12,y.diff(1).calc(v));
     /// ```
     fn diff(self, dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative {
+        if dm == Dim::USIZE && !self.1.is_zero() {
+            DimMonomial(
+                self.0.clone() * T::from(self.1.clone()),
+                self.1.clone() - Degree::one(),
+                PhantomData,
+            )
+        } else {
+            DimMonomial(T::zero(), Degree::one(), PhantomData)
+        }
+    }
+}
+
+impl<Dim, T, Degree> DynamicSymbol<T, [T]> for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    fn calc_dyn(&self, v: &[T]) -> T {
+        if !self.0.is_zero() {
+            /*if self.1.is_one() {
+                self.0.clone() * v[Dim::USIZE].clone()
+            } else */
+            {
+                self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+            }
+        } else {
+            T::zero()
+        }
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
+        if dm == Dim::USIZE {
+            if self.1.is_one() {
+                return Arc::new(Const::from(T::one()));
+            } else if !self.1.is_zero() {
+                return Arc::new(DimMonomial::<Dim, _, _>(
+                    self.0.clone() * T::from(self.1.clone()),
+                    self.1.clone() - Degree::one(),
+                    PhantomData,
+                ));
+            }
+        }
+        Arc::new(ZeroSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T, Degree> Symbol<T, [T]> for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    type Derivative = DimMonomial<Dim, T, Degree>;
+    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
+    #[inline]
+    fn calc_ref(&self, v: &[T]) -> T {
+        self.calc_dyn(v)
+    }
+
+    fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         if dm == Dim::USIZE && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
