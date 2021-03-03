@@ -308,10 +308,17 @@ mod tests {
         assert_eq!(32., y.calc_dyn(&v));
         let z = y.diff_dyn(0);
         assert_eq!(48., z.calc_dyn(&v));
+        assert_eq!(48., z.calc_ref(&v));
 
         let a = z.to_expr() + x;
         assert_eq!(64., a.calc_dyn(&v));
         assert_eq!(64., a.calc_ref(&v));
+
+        let x1 = x.diff_dyn(0);
+        let y1 = x + x1;
+        assert_eq!(40., y1.calc_dyn(&v));
+        assert_eq!(48., y1.diff(0).calc_dyn(&v));
+
     }
 
     #[test]
@@ -328,8 +335,7 @@ mod tests {
         let xsy = x.clone() - y.clone();
         assert_eq!(17., xsy.calc(v1));
 
-
-        // compile freeze with below 
+        // compile freeze with below
         // let xy = x.clone() * y.clone();
         // assert_eq!(-72., xy.calc(v1));
         // let xdy = x.clone() / y.clone();
