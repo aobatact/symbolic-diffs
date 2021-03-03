@@ -11,7 +11,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts{
+                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any{
             $(
                 fn $m(self) -> Self;
             )*
@@ -97,8 +97,8 @@ macro_rules! FlaotSymbols {
         /// This is for internal use.
         pub trait UnaryFloatSymbolEx<Out, In>: Symbol<Out, In>
         where
-            Out: ExNumOps,
-            In: ?Sized
+            Out: ExNumOps + Any,
+            In: ?Sized + Any
         {
             $(
                 fn $me(self) -> UnarySym<$op, Self, Out, In> {
@@ -111,7 +111,7 @@ macro_rules! FlaotSymbols {
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
                   Out: ExNumOps,
-                  In: ?Sized
+                  In: ?Sized + Any
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
@@ -137,7 +137,7 @@ macro_rules! FloatOps {
                 + Sub<Output = Out>
                 + Mul<Output = Out>
                 + Div<Output = Out>,
-            In: ?Sized,
+            In: ?Sized + Any,
         {
             type Derivative = impl Symbol<Out, In>;
             fn calc_ref(&self, v: &In) -> Out {
@@ -181,7 +181,7 @@ impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
 where
     Sym: Symbol<Out, In>,
     Out: ExNumOps,
-    In: ?Sized,
+    In: ?Sized + Any,
 {
 }
 
@@ -190,12 +190,35 @@ where
 pub struct PowOp;
 impl BinaryOp for PowOp {}
 
+impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
+where
+    Sym1: UnaryFloatSymbolEx<Out, In>,
+    Sym2: SymbolEx<Out, In>,
+    Out: ExNumOps + Pow<Out, Output = Out>,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.calc_ref(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        let sym1 = self.sym1.clone();
+        let sym2 = self.sym2.clone();
+        let s2dif = sym2.clone().diff(dm);
+        let a = sym1.clone().diff(dm).to_expr() * sym2 / sym1.clone();
+        let b = sym1.ln().to_expr() * s2dif;
+        Arc::new(((a + b.inner()) * self.clone()).inner())
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
 where
     Sym1: UnaryFloatSymbolEx<Out, In>,
     Sym2: SymbolEx<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized,
+    In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -216,7 +239,7 @@ where
     L: UnaryFloatSymbolEx<Out, In>,
     R: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized,
+    In: ?Sized + Any,
 {
     type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
     fn pow(self, r: R) -> Self::Output {

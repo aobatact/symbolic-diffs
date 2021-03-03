@@ -1,27 +1,43 @@
-#![feature(type_alias_impl_trait)]
+#![feature(type_alias_impl_trait, min_specialization)]
 
 use core::{
+    any::Any,
     borrow::Borrow,
     marker::PhantomData,
     ops::{Mul, Sub},
 };
 use generic_array::{ArrayLength, GenericArray};
 use num_traits::{One, Pow, Zero};
+use std::sync::Arc;
 use typenum::{
     marker_traits::{Bit, Unsigned},
     operator_aliases::Le,
     type_operators::{IsLess, Same},
-    //uint::{UInt, UTerm},
     True,
 };
 
-pub mod dynamic;
-pub mod float_ops;
-///Set of basic numerical operations
-pub mod ops;
+#[doc(hidden)]
+mod dynamic;
+mod float_ops;
+mod ops;
+
+pub use float_ops::{ExNumConsts, ExNumOps};
+
+/// Trait for Symbol using dynamic.
+pub trait DynamicSymbol<Out, In: ?Sized>: Any {
+    /// Calculate the value of this expression.
+    /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
+    /// This is for dynamic and must be same as [`calc_ref`](`crate::Symbol::calc_ref`)
+    fn calc_dyn(&self, value: &In) -> Out;
+    /// Get the partial derivative of this expression.
+    /// Dm is the marker of which variable for differentiation.
+    /// Use usize 0 if there is only one variable.
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
+    fn as_any(&self) -> &(dyn Any);
+}
 
 ///Expression symbol for calculating and differentiation.
-pub trait Symbol<Out, In: ?Sized>: Clone {
+pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     /// return type for `diff`
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
@@ -44,12 +60,90 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
         self.calc_ref(&value)
     }
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
+    #[inline]
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
+    }
+    #[doc(hidden)]
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        let arc = Arc::new(self);
+        //panic!();
+        DynExpr(arc)
+        //DynExpr(Arc::new(ZeroSym))
     }
 }
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
+
+/*
+impl<Out, In> DynamicSymbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
+where
+    Out: Clone + Any,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        (*self).calc_dyn(value)
+    }
+    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        (*self).diff_dyn(dim)
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+*/
+
+impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
+where
+    Out: Any,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.as_ref().calc_dyn(value)
+    }
+    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        self.as_ref().diff_dyn(dim)
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+/*
+impl<Out, In> Symbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
+where
+    Out: Clone + Any,
+    In: ?Sized + Any,
+{
+    type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
+    #[inline]
+    fn calc_ref(&self, value: &In) -> Out {
+        self.calc_dyn(value)
+    }
+    #[inline]
+    fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        self.diff_dyn(dim)
+    }
+}
+*/
+
+impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
+where
+    Out: Any,
+    In: ?Sized + Any,
+{
+    type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
+    #[inline]
+    fn calc_ref(&self, value: &In) -> Out {
+        self.calc_dyn(value)
+    }
+    #[inline]
+    fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+        self.diff_dyn(dim)
+    }
+}
+
+pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 #[repr(transparent)]
@@ -64,6 +158,12 @@ impl<Sym, O, I: ?Sized> Expr<Sym, O, I>
 where
     Sym: Symbol<O, I>,
 {
+    /*
+    fn new(sym : Sym) -> Self {
+        Expr(sym, PhantomData, PhantomData)
+    }
+    */
+
     pub fn inner(self) -> Sym {
         self.0
     }
@@ -94,9 +194,11 @@ where
     }
 }
 
-impl<Sym, Out: Clone, In: ?Sized> Symbol<Out, In> for Expr<Sym, Out, In>
+impl<Sym, Out, In> Symbol<Out, In> for Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
+    Out: Clone + Any,
+    In: ?Sized + Any,
 {
     type Derivative = Expr<Sym::Derivative, Out, In>;
     #[inline]
@@ -106,6 +208,26 @@ where
     #[inline]
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         self.0.diff(dm).into()
+    }
+}
+
+impl<Sym, Out: Clone, In> DynamicSymbol<Out, In> for Expr<Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Clone + Any,
+    In: ?Sized + Any,
+{
+    #[inline]
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.0.calc_dyn(value)
+    }
+    #[inline]
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        self.0.diff_dyn(dm)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
     }
 }
 
@@ -168,6 +290,27 @@ where
             po: PhantomData,
             pi: PhantomData,
         }
+    }
+}
+
+impl<Op, Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<Op, Sym, Out, In>
+where
+    Op: UnaryOp + Default,
+    Sym: Symbol<Out, In>,
+    In: ?Sized,
+    Self: Symbol<Out, In>,
+{
+    #[inline]
+    default fn calc_dyn(&self, value: &In) -> Out {
+        self.calc_ref(value)
+    }
+    #[inline]
+    default fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(self.clone().diff(dm))
+    }
+
+    default fn as_any(&self) -> &(dyn Any) {
+        self
     }
 }
 
@@ -239,6 +382,30 @@ where
     }
 }
 
+/*
+impl<Op, Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<Op, Sym1, Sym2, Out, In>
+where
+    Op: BinaryOp + Default,
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+    In: ?Sized,
+    Self: Symbol<Out, In>,
+{
+    #[inline]
+    default fn calc_dyn(&self, value: &In) -> Out {
+        self.calc_ref(value)
+    }
+    #[inline]
+    default fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(self.clone().diff(dm))
+    }
+
+    default fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+*/
+
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```
 /// # use symbolic_diffs::*;
@@ -247,9 +414,29 @@ where
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct ZeroSym;
-impl<Out, In: ?Sized> Symbol<Out, In> for ZeroSym
+impl<Out, In> DynamicSymbol<Out, In> for ZeroSym
 where
     Out: Zero,
+    In: ?Sized,
+{
+    #[inline]
+    fn calc_dyn(&self, _value: &In) -> Out {
+        Out::zero()
+    }
+    #[inline]
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(ZeroSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Out, In> Symbol<Out, In> for ZeroSym
+where
+    Out: Zero,
+    In: ?Sized,
 {
     type Derivative = ZeroSym;
     ///Returns zero.
@@ -273,9 +460,27 @@ where
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct OneSym;
-impl<Out, In: ?Sized> Symbol<Out, In> for OneSym
+impl<Out, In> DynamicSymbol<Out, In> for OneSym
+where
+    Out: One + Zero,
+    In: ?Sized,
+{
+    fn calc_dyn(&self, _value: &In) -> Out {
+        Out::one()
+    }
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(ZeroSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Out, In> Symbol<Out, In> for OneSym
 where
     Out: Zero + One,
+    In: ?Sized,
 {
     type Derivative = ZeroSym;
     ///Returns zero.
@@ -298,10 +503,28 @@ where
 /// assert_eq!(3,x.calc(6));
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct Const<T>(pub T);
-impl<Out, In: ?Sized> Symbol<Out, In> for Const<Out>
+pub struct Const<T>(pub(crate) T);
+impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
-    Out: Zero + Clone,
+    Out: Any + Zero + Clone,
+    In: ?Sized,
+{
+    fn calc_dyn(&self, _value: &In) -> Out {
+        self.0.clone()
+    }
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(ZeroSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Out, In> Symbol<Out, In> for Const<Out>
+where
+    Out: Zero + Clone + Any,
+    In: ?Sized,
 {
     type Derivative = ZeroSym;
     /// returns self.
@@ -342,6 +565,30 @@ where
     }
 }
 
+impl<Out, In, Sym> DynamicSymbol<Out, In> for Option<Sym>
+where
+    Out: Zero,
+    In: ?Sized,
+    Sym: Symbol<Out, In>,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        match self {
+            Some(sym) => sym.calc_ref(value),
+            None => Out::zero(),
+        }
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        match self {
+            Some(sym) => sym.diff_dyn(dm),
+            None => Arc::new(ZeroSym),
+        }
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<O, I, Sym> Symbol<O, I> for Option<Sym>
 where
     O: Zero,
@@ -363,21 +610,43 @@ where
     }
 }
 
-impl<O, I, Sym1, Sym2> Symbol<O, I> for Result<Sym1, Sym2>
+impl<Out, In, Sym1, Sym2> DynamicSymbol<Out, In> for Result<Sym1, Sym2>
 where
-    O: Zero,
-    I: ?Sized,
-    Sym1: Symbol<O, I>,
-    Sym2: Symbol<O, I>,
+    Out: Zero,
+    In: ?Sized,
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
 {
-    type Derivative = Result<Sym1::Derivative, Sym2::Derivative>;
-    fn calc_ref(&self, value: &I) -> O {
+    fn calc_dyn(&self, value: &In) -> Out {
         match self {
             Ok(sym) => sym.calc_ref(value),
             Err(sym) => sym.calc_ref(value),
         }
     }
-    fn diff(self, dm: usize) -> <Self as Symbol<O, I>>::Derivative {
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        match self {
+            Ok(sym) => sym.diff_dyn(dm),
+            Err(sym) => sym.diff_dyn(dm),
+        }
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Out, In, Sym1, Sym2> Symbol<Out, In> for Result<Sym1, Sym2>
+where
+    Out: Zero,
+    In: ?Sized,
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+{
+    type Derivative = Result<Sym1::Derivative, Sym2::Derivative>;
+    fn calc_ref(&self, value: &In) -> Out {
+        self.calc_dyn(value)
+    }
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         match self {
             Ok(sym) => Ok(sym.diff(dm)),
             Err(sym) => Err(sym.diff(dm)),
@@ -393,6 +662,22 @@ where
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Variable;
+impl<Out, In> DynamicSymbol<Out, In> for Variable
+where
+    Out: Zero + One,
+    In: ToOwned<Owned = Out> + ?Sized,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        value.to_owned()
+    }
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(OneSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
 impl<Out, In> Symbol<Out, In> for Variable
 where
     Out: Clone + Zero + One + Borrow<In>,
@@ -458,10 +743,48 @@ where
     }
 }
 
+impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: Unsigned + IsLess<N> + Any,
+    N: ArrayLength<T>,
+    True: Same<<Dim as IsLess<N>>::Output>,
+{
+    fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
+        debug_assert!(<Le<Dim, N> as Bit>::BOOL);
+        v[Dim::USIZE].clone()
+    }
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
+        Arc::new(OneSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T> DynamicSymbol<T, [T]> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: Unsigned + Any,
+{
+    fn calc_dyn(&self, v: &[T]) -> T {
+        v[Dim::USIZE].clone()
+    }
+
+    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
+        Arc::new(OneSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + IsLess<N>,
+    Dim: Unsigned + IsLess<N> + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -490,6 +813,21 @@ where
     /// assert_eq!(1,y.diff(0).calc(v));
     /// ```
     fn diff(self, _dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative {
+        OneSym
+    }
+}
+
+impl<Dim, T> Symbol<T, [T]> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: Unsigned + Any,
+{
+    type Derivative = OneSym;
+    fn calc_ref(&self, v: &[T]) -> T {
+        v[Dim::USIZE].clone()
+    }
+
+    fn diff(self, _dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         OneSym
     }
 }
@@ -532,31 +870,64 @@ where
     }
 }
 
-impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
+impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree>,
-    Dim: Unsigned + IsLess<N>,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq,
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + IsLess<N> + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
-    type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         if !self.0.is_zero() {
-            if self.1.is_one() {
+            /*if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()
-            } else {
+            } else */
+            {
                 self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
             }
         } else {
             T::zero()
         }
     }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
+        if dm == Dim::USIZE {
+            if self.1.is_one() {
+                return Arc::new(Const::from(T::one()));
+            } else if !self.1.is_zero() {
+                return Arc::new(DimMonomial::<Dim, _, _>(
+                    self.0.clone() * T::from(self.1.clone()),
+                    self.1.clone() - Degree::one(),
+                    PhantomData,
+                ));
+            }
+        }
+        Arc::new(ZeroSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + IsLess<N> + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    N: ArrayLength<T>,
+    True: Same<<Dim as IsLess<N>>::Output>,
+{
+    type Derivative = DimMonomial<Dim, T, Degree>;
+    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
+    #[inline]
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
+        self.calc_dyn(v)
+    }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
     ///
-    /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
+    /// There are some limitation for using [`diff`](`crate::Symbol::diff`) directory, so you can't call like bellow.
     /// ```compile_fail
     /// let x = DimVariable::<U0>::new();
     /// let _ = x.diff(0);
@@ -570,12 +941,78 @@ where
     /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
     /// assert_eq!(8,x.diff(0).calc(v));
     /// assert_eq!(0,x.diff(1).calc(v));
+    /// assert_eq!(4,x.diff(0).diff(0).calc(v));
+    /// assert_eq!(0,x.diff(0).diff(1).calc(v));
     /// //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
     /// let y = x.inner_borrow().change_dim::<U1>().to_expr();
     /// assert_eq!(0,y.diff(0).calc(v));
     /// assert_eq!(12,y.diff(1).calc(v));
     /// ```
     fn diff(self, dm: usize) -> <Self as Symbol<T, GenericArray<T, N>>>::Derivative {
+        if dm == Dim::USIZE && !self.1.is_zero() {
+            DimMonomial(
+                self.0.clone() * T::from(self.1.clone()),
+                self.1.clone() - Degree::one(),
+                PhantomData,
+            )
+        } else {
+            DimMonomial(T::zero(), Degree::one(), PhantomData)
+        }
+    }
+}
+
+impl<Dim, T, Degree> DynamicSymbol<T, [T]> for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    fn calc_dyn(&self, v: &[T]) -> T {
+        if !self.0.is_zero() {
+            /*if self.1.is_one() {
+                self.0.clone() * v[Dim::USIZE].clone()
+            } else */
+            {
+                self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+            }
+        } else {
+            T::zero()
+        }
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
+        if dm == Dim::USIZE {
+            if self.1.is_one() {
+                return Arc::new(Const::from(T::one()));
+            } else if !self.1.is_zero() {
+                return Arc::new(DimMonomial::<Dim, _, _>(
+                    self.0.clone() * T::from(self.1.clone()),
+                    self.1.clone() - Degree::one(),
+                    PhantomData,
+                ));
+            }
+        }
+        Arc::new(ZeroSym)
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T, Degree> Symbol<T, [T]> for DimMonomial<Dim, T, Degree>
+where
+    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: Unsigned + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    type Derivative = DimMonomial<Dim, T, Degree>;
+    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
+    #[inline]
+    fn calc_ref(&self, v: &[T]) -> T {
+        self.calc_dyn(v)
+    }
+
+    fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         if dm == Dim::USIZE && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),

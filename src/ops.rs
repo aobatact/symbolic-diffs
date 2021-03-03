@@ -1,3 +1,5 @@
+//! Set of basic numerical operations
+//! These are internaly used from `Expr`.  
 use super::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -24,12 +26,35 @@ impl BinaryOp for AddOp {}
 /// ```
 pub type AddSym<Sym1, Sym2, Out, In> = BinarySym<AddOp, Sym1, Sym2, Out, In>;
 
+impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
+where
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+    Out: Add<Output = Out> + Any,
+    In: ?Sized + Any,
+{
+    #[inline]
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.sym1.calc_dyn(value) + self.sym2.calc_dyn(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(BinarySym::new_with_op(
+            AddOp,
+            self.sym1.diff_dyn(dm),
+            self.sym2.diff_dyn(dm),
+        ))
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out>,
-    In: ?Sized,
+    Out: Add<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -63,14 +88,38 @@ impl BinaryOp for SubOp {}
 /// ```
 pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
 
+impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
+where
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+    Out: Sub<Output = Out> + Any,
+    In: ?Sized + Any,
+{
+    #[inline]
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.sym1.calc_dyn(value) - self.sym2.calc_dyn(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(BinarySym::new_with_op(
+            SubOp,
+            self.sym1.diff_dyn(dm),
+            self.sym2.diff_dyn(dm),
+        ))
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out>,
-    In: ?Sized,
+    Out: Sub<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
+    #[inline]
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
@@ -102,12 +151,37 @@ impl BinaryOp for MulOp {}
 /// ```
 pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
 
+impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
+where
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Any,
+    In: ?Sized + Any,
+{
+    #[inline]
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.sym1.calc_dyn(value) * self.sym2.calc_dyn(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        let sym2diff = self.sym2.diff_dyn(dm);
+        let df = BinarySym::new_with_op(
+            AddOp,
+            BinarySym::new_with_op(MulOp, self.sym1.diff_dyn(dm), self.sym2.clone()),
+            BinarySym::new_with_op(MulOp, self.sym1.clone(), sym2diff),
+        );
+        Arc::new(df)
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out>,
-    In: ?Sized,
+    Out: Add<Output = Out> + Mul<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = AddSym<
         MulSym<Sym1::Derivative, Sym2, Out, In>,
@@ -150,12 +224,40 @@ impl BinaryOp for DivOp {}
 /// ```
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
 
+impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
+where
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out> + Any,
+    In: ?Sized + Any,
+{
+    #[inline]
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.sym1.calc_dyn(value) * self.sym2.calc_dyn(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        let res = BinarySym::new_with_op(
+            DivOp,
+            BinarySym::new_with_op(
+                SubOp,
+                BinarySym::new_with_op(MulOp, self.sym1.diff_dyn(dm), self.sym2.clone()),
+                BinarySym::new_with_op(MulOp, self.sym1.clone(), self.sym2.diff_dyn(dm)),
+            ),
+            BinarySym::new_with_op(MulOp, self.sym2.clone(), self.sym2.clone()),
+        );
+        Arc::new(res)
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out>,
-    In: ?Sized,
+    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = DivSym<
         SubSym<
@@ -188,8 +290,8 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O>,
-            I: ?Sized,
+            O: $( $cond<Output = O> + )* $t<Output = O> + Any,
+            I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {
@@ -225,8 +327,8 @@ pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
 impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Neg<Output = Out>,
-    In: ?Sized,
+    Out: Neg<Output = Out> + Any,
+    In: ?Sized + Any,
 {
     type Derivative = NegSym<Sym::Derivative, Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -240,8 +342,8 @@ where
 impl<S, O, I> Neg for Expr<S, O, I>
 where
     S: Symbol<O, I>,
-    O: Neg<Output = O>,
-    I: ?Sized,
+    O: Neg<Output = O> + Any,
+    I: ?Sized + Any,
 {
     type Output = Expr<NegSym<S, O, I>, O, I>;
     fn neg(self) -> Self::Output {
@@ -250,6 +352,8 @@ where
 }
 
 /// [`UnaryOp`](`crate::UnaryOp`) marker for `x` [*](`core::ops::Mul`)`x`
+///
+/// This is same as `x * x`, but for optimization used in [`UnaryFloatSymbolEx`](`crate::float_ops::UnaryFloatSymbolEx`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SquareOp;
 impl UnaryOp for SquareOp {}
@@ -257,8 +361,8 @@ impl UnaryOp for SquareOp {}
 impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
-    In: ?Sized,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -272,10 +376,11 @@ where
     }
 }
 
-impl<Sym, Out, In: ?Sized> Expr<Sym, Out, In>
+impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
         let sq: UnarySym<SquareOp, Sym, Out, In> = self.inner().into();
@@ -283,15 +388,36 @@ where
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct UnaryPowOp<T>(T);
+/// [`UnaryOp`](`crate::UnaryOp`) marker for [`pow`](`num_traits::pow::Pow`)
+///
+/// Unlike other [`UnaryOp`](`crate::UnaryOp`), this has an field to represent the pow.
+/// ```
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = Variable.to_expr();
+/// let x4 = x.pow_t(4_u8);
+/// assert_eq!(16,x4.calc(2));
+/// ```
+/// Since i32 doesn't impliment [`Pow`](`num_traits::pow::Pow`)`<i32>`, should use i8 as power.
+/// ```compile_fail
+/// # use symbolic_diffs::*;
+/// # use typenum::*;
+/// # use generic_array::*;
+/// let x = Variable.to_expr();
+/// let x4 = x.pow_t(4);
+/// assert_eq!(16,x4.calc(2));
+/// ```
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub struct UnaryPowOp<T>(pub(crate) T);
 impl<T> UnaryOp for UnaryPowOp<T> {}
 
-impl<Sym, Out, In: ?Sized, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
+impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone,
-    T: Sub<Output = T> + One + Clone,
+    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone + Any,
+    T: Sub<Output = T> + One + Clone + Default + Any,
+    In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
@@ -319,15 +445,16 @@ where
 */
 
 /// Operation for pow
-impl<Sym, Out, In: ?Sized> Expr<Sym, Out, In>
+impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any,
+    In: ?Sized + Any,
 {
     pub fn pow_t<T>(self, r: T) -> Expr<UnarySym<UnaryPowOp<T>, Sym, Out, In>, Out, In>
     where
         Out: Pow<T, Output = Out>,
-        T: Sub<Output = T> + One + Clone,
+        T: Sub<Output = T> + One + Clone + Any + Default,
     {
         UnarySym::new_with_op(UnaryPowOp(r), self.inner()).into()
     }
