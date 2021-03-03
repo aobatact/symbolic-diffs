@@ -327,6 +327,9 @@ mod tests {
         assert_eq!(-1., xpy.calc(v1));
         let xsy = x.clone() - y.clone();
         assert_eq!(17., xsy.calc(v1));
+
+
+        // compile freeze with below 
         // let xy = x.clone() * y.clone();
         // assert_eq!(-72., xy.calc(v1));
         // let xdy = x.clone() / y.clone();
