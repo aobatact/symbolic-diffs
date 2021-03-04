@@ -318,7 +318,6 @@ mod tests {
         let y1 = x + x1;
         assert_eq!(40., y1.calc_dyn(&v));
         assert_eq!(48., y1.diff(0).calc_dyn(&v));
-
     }
 
     #[test]

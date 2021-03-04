@@ -146,6 +146,8 @@ where
 pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
+/// We currently needs this because of the restriction around specialization.
+/// (We cannot impl Ops like Add because downside crate may impl Symbol for integer and this conflicts with current Add of integer)
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug)]
 pub struct Expr<Sym: Symbol<Out, In>, Out, In: ?Sized = Out>(
