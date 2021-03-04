@@ -198,7 +198,7 @@ where
     In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
-        self.calc_ref(value)
+        self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         let sym1 = self.sym1.clone();

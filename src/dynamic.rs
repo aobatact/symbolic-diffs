@@ -106,8 +106,8 @@ where
             other
         } else {
             //let m = BinarySym::new_with_op(MulOp,self, other);
+            panic!("mul is not working for DynExpr");
             let m = MulSym::new(self, other);
-            //panic!("mul is not working for DynExpr");
             m.to_dyn_expr()
             //let arc = Arc::new(m);
             //DynExpr(arc)

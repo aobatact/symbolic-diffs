@@ -8,6 +8,7 @@ use core::{
 };
 use generic_array::{ArrayLength, GenericArray};
 use num_traits::{One, Pow, Zero};
+use std::fmt;
 use std::sync::Arc;
 use typenum::{
     marker_traits::{Bit, Unsigned},
@@ -20,6 +21,7 @@ use typenum::{
 mod dynamic;
 mod float_ops;
 mod ops;
+mod display;
 
 pub use float_ops::{ExNumConsts, ExNumOps};
 
@@ -42,6 +44,7 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
+    //#[deprecated]
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
@@ -234,7 +237,19 @@ where
 }
 
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
-pub trait UnaryOp {}
+pub trait UnaryOp {
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        let s = std::any::type_name::<Self>();
+        debug_assert!(s.ends_with("Op"));
+        let op_name = &s[..s.len() - 2];
+        f.write_fmt(format_args!("{}( ", op_name))?;
+        inner(f)?;
+        f.write_str(")")
+    }
+}
 
 /// [`Symbol`](`crate::Symbol`) represent Unary Operation.
 #[derive(Debug, PartialEq, Eq)]
@@ -317,7 +332,31 @@ where
 }
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
-pub trait BinaryOp {}
+pub trait BinaryOp {
+    fn op_symbol() -> Option<&'static str> {
+        None
+    }
+
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        left: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        right: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        let s = std::any::type_name::<Self>();
+        debug_assert!(s.ends_with("Op"));
+        let op_name = &s[..s.len() - 2];
+        if let Some(sym) = Self::op_symbol() {
+            left(f)?;
+            f.write_fmt(format_args!(" {} ", sym))?;
+            right(f)
+        } else {
+            f.write_fmt(format_args!("{}( ", op_name))?;
+            left(f)?;
+            right(f)?;
+            f.write_str(")")
+        }
+    }
+}
 
 /// [`Symbol`](`crate::Symbol`) represent Binary Operation.
 #[derive(Debug, PartialEq, Eq)]
