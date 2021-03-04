@@ -3,6 +3,7 @@
 use core::{
     any::Any,
     borrow::Borrow,
+    fmt::Display,
     marker::PhantomData,
     ops::{Mul, Sub},
 };
@@ -17,16 +18,16 @@ use typenum::{
     True,
 };
 
-#[doc(hidden)]
-mod dynamic;
+//#[doc(hidden)]
+//mod dynamic;
+mod display;
 mod float_ops;
 mod ops;
-mod display;
 
 pub use float_ops::{ExNumConsts, ExNumOps};
 
 /// Trait for Symbol using dynamic.
-pub trait DynamicSymbol<Out, In: ?Sized>: Any {
+pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
     /// This is for dynamic and must be same as [`calc_ref`](`crate::Symbol::calc_ref`)
@@ -67,6 +68,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
     }
+    /*
     #[doc(hidden)]
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
         let arc = Arc::new(self);
@@ -74,6 +76,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
         DynExpr(arc)
         //DynExpr(Arc::new(ZeroSym))
     }
+    */
 }
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
@@ -606,6 +609,7 @@ where
     }
 }
 
+/*
 impl<Out, In, Sym> DynamicSymbol<Out, In> for Option<Sym>
 where
     Out: Zero,
@@ -694,6 +698,7 @@ where
         }
     }
 }
+*/
 
 ///[`Symbol`](`crate::Symbol`) represents an single variable.
 /// ```
