@@ -927,7 +927,7 @@ where
         + Any
         + Display,
     Dim: Unsigned + IsLess<N> + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -975,7 +975,7 @@ where
         + Any
         + Display,
     Dim: Unsigned + IsLess<N> + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -1031,8 +1031,8 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: Unsigned + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    Dim: Unsigned + Any + Display,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
 {
     fn calc_dyn(&self, v: &[T]) -> T {
         if !self.0.is_zero() {
@@ -1076,8 +1076,8 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: Unsigned + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    Dim: Unsigned + Any + Display,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
