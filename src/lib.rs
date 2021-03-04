@@ -550,7 +550,7 @@ where
 pub struct Const<T>(pub(crate) T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
-    Out: Any + Zero + Clone,
+    Out: Any + Zero + Clone + Display,
     In: ?Sized,
 {
     fn calc_dyn(&self, _value: &In) -> Out {
@@ -567,7 +567,7 @@ where
 
 impl<Out, In> Symbol<Out, In> for Const<Out>
 where
-    Out: Zero + Clone + Any,
+    Out: Zero + Clone + Any + Display,
     In: ?Sized,
 {
     type Derivative = ZeroSym;
@@ -918,7 +918,14 @@ where
 
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
     Dim: Unsigned + IsLess<N> + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
@@ -959,7 +966,14 @@ where
 
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
     Dim: Unsigned + IsLess<N> + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
@@ -1009,7 +1023,14 @@ where
 
 impl<Dim, T, Degree> DynamicSymbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
     Dim: Unsigned + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -1047,7 +1068,14 @@ where
 
 impl<Dim, T, Degree> Symbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
     Dim: Unsigned + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {

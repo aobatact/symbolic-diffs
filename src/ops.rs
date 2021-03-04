@@ -413,7 +413,7 @@ impl UnaryOp for SquareOp {}
 impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
@@ -431,7 +431,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
     In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {

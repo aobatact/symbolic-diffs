@@ -11,7 +11,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any{
+                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any + Display{
             $(
                 fn $m(self) -> Self;
             )*
@@ -198,7 +198,7 @@ where
     In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
+        self.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         let sym1 = self.sym1.clone();
