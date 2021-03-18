@@ -1,4 +1,4 @@
-#![feature(type_alias_impl_trait, min_specialization)]
+#![feature(min_type_alias_impl_trait, min_specialization)]
 
 use core::{
     any::Any,
