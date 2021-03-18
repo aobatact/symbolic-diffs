@@ -2,14 +2,14 @@ use crate::*;
 use core::fmt::Display;
 
 impl Display for ZeroSym {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("0")
     }
 }
 
 impl Display for OneSym {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("1")
     }
 }
 
@@ -56,5 +56,23 @@ impl<Op: BinaryOp, Sym1: Symbol<Out, In>, Sym2: Symbol<Out, In>, Out, In: ?Sized
 impl<Sym: Symbol<Out, In>, Out, In: ?Sized> Display for Expr<Sym, Out, In> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         self.0.fmt(f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    #[test]
+    fn diplay_test() {
+        let x: Expr<Variable, f32> = Variable.into();
+        assert_eq!("x",x.to_string());
+        let x1 = x + Const(1.);
+        assert_eq!("x + 1",x1.to_string());
+        let exp = x.exp();
+        assert_eq!("exp( x)",exp.to_string());
+        let exp1 = x1.exp();
+        assert_eq!("exp( x + 1)",exp1.to_string());
+        let xexp = x * exp;
+        assert_eq!("(x)(exp( x))",xexp.to_string());
     }
 }

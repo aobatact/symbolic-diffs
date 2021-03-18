@@ -128,7 +128,12 @@ macro_rules! FloatOps {
     ($t:ident,$me:ident,$op:ident,$ex:tt) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
         pub struct $op;
-        impl UnaryOp for $op {}
+        impl UnaryOp for $op {
+            fn op_name<'a>() -> &'a str{
+                std::stringify!($me)
+            }
+        }
+
         impl<Sym, Out, In> Symbol<Out, In> for UnarySym<$op, Sym, Out, In>
         where
             Sym: Symbol<Out, In>,

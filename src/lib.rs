@@ -241,14 +241,18 @@ where
 
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
 pub trait UnaryOp {
+    fn op_name<'a>() -> &'a str{
+        let s = std::any::type_name::<Self>();
+        debug_assert!(s.ends_with("Op"));
+        let op_name = &s[..s.len() - 2];
+        op_name
+    }
+
     fn format_expression(
         f: &mut fmt::Formatter<'_>,
         inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
     ) -> Result<(), fmt::Error> {
-        let s = std::any::type_name::<Self>();
-        debug_assert!(s.ends_with("Op"));
-        let op_name = &s[..s.len() - 2];
-        f.write_fmt(format_args!("{}( ", op_name))?;
+        f.write_fmt(format_args!("{}( ", Self::op_name()))?;
         inner(f)?;
         f.write_str(")")
     }
