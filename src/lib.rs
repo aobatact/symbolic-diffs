@@ -1,13 +1,15 @@
-#![feature(type_alias_impl_trait, min_specialization)]
+#![feature(min_type_alias_impl_trait, min_specialization)]
 
 use core::{
     any::Any,
     borrow::Borrow,
+    fmt::Display,
     marker::PhantomData,
     ops::{Mul, Sub},
 };
 use generic_array::{ArrayLength, GenericArray};
 use num_traits::{One, Pow, Zero};
+use std::fmt;
 use std::sync::Arc;
 use typenum::{
     marker_traits::{Bit, Unsigned},
@@ -16,15 +18,16 @@ use typenum::{
     True,
 };
 
-#[doc(hidden)]
-mod dynamic;
+//#[doc(hidden)]
+//mod dynamic;
+mod display;
 mod float_ops;
 mod ops;
 
 pub use float_ops::{ExNumConsts, ExNumOps};
 
 /// Trait for Symbol using dynamic.
-pub trait DynamicSymbol<Out, In: ?Sized>: Any {
+pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
     /// This is for dynamic and must be same as [`calc_ref`](`crate::Symbol::calc_ref`)
@@ -42,6 +45,7 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
+    //#[deprecated]
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
@@ -64,6 +68,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
     }
+    /*
     #[doc(hidden)]
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
         let arc = Arc::new(self);
@@ -71,6 +76,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
         DynExpr(arc)
         //DynExpr(Arc::new(ZeroSym))
     }
+    */
 }
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
@@ -146,6 +152,8 @@ where
 pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
+/// We currently needs this because of the restriction around specialization.
+/// (We cannot impl Ops like Add because downside crate may impl Symbol for integer and this conflicts with current Add of integer)
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug)]
 pub struct Expr<Sym: Symbol<Out, In>, Out, In: ?Sized = Out>(
@@ -232,7 +240,23 @@ where
 }
 
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
-pub trait UnaryOp {}
+pub trait UnaryOp {
+    fn op_name<'a>() -> &'a str{
+        let s = std::any::type_name::<Self>();
+        debug_assert!(s.ends_with("Op"));
+        let op_name = &s[..s.len() - 2];
+        op_name
+    }
+
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        f.write_fmt(format_args!("{}( ", Self::op_name()))?;
+        inner(f)?;
+        f.write_str(")")
+    }
+}
 
 /// [`Symbol`](`crate::Symbol`) represent Unary Operation.
 #[derive(Debug, PartialEq, Eq)]
@@ -315,7 +339,31 @@ where
 }
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
-pub trait BinaryOp {}
+pub trait BinaryOp {
+    fn op_symbol() -> Option<&'static str> {
+        None
+    }
+
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        left: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        right: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        let s = std::any::type_name::<Self>();
+        debug_assert!(s.ends_with("Op"));
+        let op_name = &s[..s.len() - 2];
+        if let Some(sym) = Self::op_symbol() {
+            left(f)?;
+            f.write_fmt(format_args!(" {} ", sym))?;
+            right(f)
+        } else {
+            f.write_fmt(format_args!("{}( ", op_name))?;
+            left(f)?;
+            right(f)?;
+            f.write_str(")")
+        }
+    }
+}
 
 /// [`Symbol`](`crate::Symbol`) represent Binary Operation.
 #[derive(Debug, PartialEq, Eq)]
@@ -506,7 +554,7 @@ where
 pub struct Const<T>(pub(crate) T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
-    Out: Any + Zero + Clone,
+    Out: Any + Zero + Clone + Display,
     In: ?Sized,
 {
     fn calc_dyn(&self, _value: &In) -> Out {
@@ -523,7 +571,7 @@ where
 
 impl<Out, In> Symbol<Out, In> for Const<Out>
 where
-    Out: Zero + Clone + Any,
+    Out: Zero + Clone + Any + Display,
     In: ?Sized,
 {
     type Derivative = ZeroSym;
@@ -565,6 +613,7 @@ where
     }
 }
 
+/*
 impl<Out, In, Sym> DynamicSymbol<Out, In> for Option<Sym>
 where
     Out: Zero,
@@ -653,6 +702,7 @@ where
         }
     }
 }
+*/
 
 ///[`Symbol`](`crate::Symbol`) represents an single variable.
 /// ```
@@ -872,9 +922,16 @@ where
 
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
     Dim: Unsigned + IsLess<N> + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -913,9 +970,16 @@ where
 
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
     Dim: Unsigned + IsLess<N> + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -963,9 +1027,16 @@ where
 
 impl<Dim, T, Degree> DynamicSymbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
-    Dim: Unsigned + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
+    Dim: Unsigned + Any + Display,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
 {
     fn calc_dyn(&self, v: &[T]) -> T {
         if !self.0.is_zero() {
@@ -1001,9 +1072,16 @@ where
 
 impl<Dim, T, Degree> Symbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone + Zero + One + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
-    Dim: Unsigned + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+    T: Clone
+        + Zero
+        + One
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + From<Degree>
+        + Any
+        + Display,
+    Dim: Unsigned + Any + Display,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`

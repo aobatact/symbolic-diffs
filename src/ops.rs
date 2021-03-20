@@ -6,7 +6,11 @@ use core::ops::{Add, Div, Mul, Neg, Sub};
 /// [`BinaryOp`](`crate::BinaryOp`) marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AddOp;
-impl BinaryOp for AddOp {}
+impl BinaryOp for AddOp {
+    fn op_symbol() -> Option<&'static str> {
+        Some("+")
+    }
+}
 /// Represent [`+`](`core::ops::Add`) Symbol
 /// ```
 /// # use symbolic_diffs::*;
@@ -68,7 +72,12 @@ where
 /// [`BinaryOp`](`crate::BinaryOp`) marker for [`-`](`core::ops::Sub`) with [`SubSym`](`crate::ops::SubSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SubOp;
-impl BinaryOp for SubOp {}
+impl BinaryOp for SubOp {
+    fn op_symbol() -> Option<&'static str> {
+        Some("-")
+    }
+}
+
 /// Represent [`-`](`core::ops::Sub`) Symbol
 /// ```
 /// # use symbolic_diffs::*;
@@ -131,7 +140,24 @@ where
 /// [`BinaryOp`](`crate::BinaryOp`) marker for [`*`](`core::ops::Mul`) with [`MulSym`](`crate::ops::MulSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct MulOp;
-impl BinaryOp for MulOp {}
+impl BinaryOp for MulOp {
+    fn op_symbol() -> Option<&'static str> {
+        Some("*")
+    }
+
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        left: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        right: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        f.write_str("(")?;
+        left(f)?;
+        f.write_str(")(")?;
+        right(f)?;
+        f.write_str(")")
+    }
+}
+
 /// Represent [`*`](`core::ops::Mul`) Symbol
 /// ```
 /// # use symbolic_diffs::*;
@@ -204,7 +230,23 @@ where
 /// [`BinaryOp`](`crate::BinaryOp`) marker for [`/`](`core::ops::Div`) with [`DivSym`](`crate::ops::DivSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct DivOp;
-impl BinaryOp for DivOp {}
+impl BinaryOp for DivOp {
+    fn op_symbol() -> Option<&'static str> {
+        Some("/")
+    }
+
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        left: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        right: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        f.write_str("(")?;
+        left(f)?;
+        f.write_str(")/(")?;
+        right(f)?;
+        f.write_str(")")
+    }
+}
 /// Represent [`/`](`core::ops::Div`) Symbol
 /// ```
 /// # use symbolic_diffs::*;
@@ -233,7 +275,7 @@ where
 {
     #[inline]
     fn calc_dyn(&self, value: &In) -> Out {
-        self.sym1.calc_dyn(value) * self.sym2.calc_dyn(value)
+        self.sym1.calc_dyn(value) / self.sym2.calc_dyn(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         let res = BinarySym::new_with_op(
@@ -309,7 +351,17 @@ op_expr!(Div, DivSym, div, [Add, Sub, Mul]);
 /// [`UnaryOp`](`crate::UnaryOp`) marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct NegOp;
-impl UnaryOp for NegOp {}
+impl UnaryOp for NegOp {
+    fn format_expression(
+        f: &mut fmt::Formatter<'_>,
+        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+    ) -> Result<(), fmt::Error> {
+        f.write_str("-(")?;
+        inner(f)?;
+        f.write_str(")")
+    }
+}
+
 /// Represent Unary[`-`](`core::ops::Neg`) Symbol
 /// ```
 /// # use symbolic_diffs::*;
@@ -361,7 +413,7 @@ impl UnaryOp for SquareOp {}
 impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
@@ -379,7 +431,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
     In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {

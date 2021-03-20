@@ -11,7 +11,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any{
+                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any + Display{
             $(
                 fn $m(self) -> Self;
             )*
@@ -128,7 +128,12 @@ macro_rules! FloatOps {
     ($t:ident,$me:ident,$op:ident,$ex:tt) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
         pub struct $op;
-        impl UnaryOp for $op {}
+        impl UnaryOp for $op {
+            fn op_name<'a>() -> &'a str{
+                std::stringify!($me)
+            }
+        }
+
         impl<Sym, Out, In> Symbol<Out, In> for UnarySym<$op, Sym, Out, In>
         where
             Sym: Symbol<Out, In>,
