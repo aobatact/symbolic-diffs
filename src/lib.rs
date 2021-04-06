@@ -36,6 +36,7 @@ pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
+    /// Convert to any for downcast.
     fn as_any(&self) -> &(dyn Any);
 }
 
@@ -45,7 +46,6 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
-    //#[deprecated]
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
@@ -81,24 +81,6 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
 
 impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 
-/*
-impl<Out, In> DynamicSymbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
-where
-    Out: Clone + Any,
-    In: ?Sized + Any,
-{
-    fn calc_dyn(&self, value: &In) -> Out {
-        (*self).calc_dyn(value)
-    }
-    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
-        (*self).diff_dyn(dim)
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
-    }
-}
-*/
-
 impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
     Out: Any,
@@ -114,24 +96,6 @@ where
         self
     }
 }
-
-/*
-impl<Out, In> Symbol<Out, In> for &'static dyn DynamicSymbol<Out, In>
-where
-    Out: Clone + Any,
-    In: ?Sized + Any,
-{
-    type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
-    #[inline]
-    fn calc_ref(&self, value: &In) -> Out {
-        self.calc_dyn(value)
-    }
-    #[inline]
-    fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
-        self.diff_dyn(dim)
-    }
-}
-*/
 
 impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
@@ -166,12 +130,6 @@ impl<Sym, O, I: ?Sized> Expr<Sym, O, I>
 where
     Sym: Symbol<O, I>,
 {
-    /*
-    fn new(sym : Sym) -> Self {
-        Expr(sym, PhantomData, PhantomData)
-    }
-    */
-
     pub fn inner(self) -> Sym {
         self.0
     }
@@ -241,13 +199,15 @@ where
 
 /// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
 pub trait UnaryOp {
-    fn op_name<'a>() -> &'a str{
+    ///Returns the op name.
+    fn op_name<'a>() -> &'a str {
         let s = std::any::type_name::<Self>();
         debug_assert!(s.ends_with("Op"));
         let op_name = &s[..s.len() - 2];
         op_name
     }
 
+    ///Formats the expression to display.
     fn format_expression(
         f: &mut fmt::Formatter<'_>,
         inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
@@ -340,6 +300,7 @@ where
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
 pub trait BinaryOp {
+    /// Symbol for this expression.
     fn op_symbol() -> Option<&'static str> {
         None
     }
@@ -429,30 +390,6 @@ where
         BinarySym::new(v.0, v.1)
     }
 }
-
-/*
-impl<Op, Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<Op, Sym1, Sym2, Out, In>
-where
-    Op: BinaryOp + Default,
-    Sym1: Symbol<Out, In>,
-    Sym2: Symbol<Out, In>,
-    In: ?Sized,
-    Self: Symbol<Out, In>,
-{
-    #[inline]
-    default fn calc_dyn(&self, value: &In) -> Out {
-        self.calc_ref(value)
-    }
-    #[inline]
-    default fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().diff(dm))
-    }
-
-    default fn as_any(&self) -> &(dyn Any) {
-        self
-    }
-}
-*/
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```

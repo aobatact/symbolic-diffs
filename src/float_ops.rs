@@ -129,7 +129,7 @@ macro_rules! FloatOps {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
         pub struct $op;
         impl UnaryOp for $op {
-            fn op_name<'a>() -> &'a str{
+            fn op_name<'a>() -> &'a str {
                 std::stringify!($me)
             }
         }
