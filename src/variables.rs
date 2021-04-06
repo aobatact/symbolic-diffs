@@ -3,21 +3,24 @@ use core::{
     any::Any,
     borrow::Borrow,
     fmt::Display,
-    marker::PhantomData,
     ops::{Mul, Sub},
 };
-#[cfg(generic_array)]
-use generic_array::{ArrayLength, GenericArray};
 use num_traits::{One, Pow, Zero};
 use std::sync::Arc;
+#[cfg(feature = "typenum")]
+use typenum::marker_traits::Unsigned;
+
+#[cfg(feature = "generic-array1")]
+use generic_array::{ArrayLength, GenericArray};
+#[cfg(feature = "generic-array1")]
 use typenum::{
-    marker_traits::{Bit, Unsigned},
+    marker_traits::Bit,
     operator_aliases::Le,
     type_operators::{IsLess, Same},
     True,
 };
 
-pub trait DimMarker: Default + Copy {
+pub trait DimMarker: Copy {
     fn dim(self) -> usize;
 }
 
@@ -30,6 +33,7 @@ impl<const DM: usize> DimMarker for Dim<DM> {
     }
 }
 
+#[cfg(feature = "typenum")]
 impl<T: Unsigned> DimMarker for T {
     fn dim(self) -> usize {
         T::USIZE
@@ -196,7 +200,7 @@ where
 }
 
 ///[`Symbol`](`crate::Symbol`) represents an single variable.
-/// Use this when you have only one dimentions.
+/// Use this when you have only one dimensions.
 /// ```
 /// # use symbolic_diffs::*;
 /// let x = Variable;
@@ -264,7 +268,7 @@ where
 /// let y = DimVariable::<U1>::new();
 /// assert_eq!(3,y.calc(v));
 /// ```
-/// The dimention of variable is statically checked.
+/// The dimension of variable is statically checked for typenum.
 /// ```compile_fail
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
@@ -280,8 +284,15 @@ impl<Dim> DimVariable<Dim>
 where
     Dim: DimMarker,
 {
-    pub fn new() -> DimVariable<Dim> {
+    pub fn new() -> DimVariable<Dim>
+    where
+        Dim: Default,
+    {
         DimVariable(Default::default())
+    }
+
+    pub fn with_dimension(d: Dim) -> DimVariable<Dim> {
+        DimVariable(d)
     }
 
     pub fn dim(&self) -> usize {
@@ -289,11 +300,11 @@ where
     }
 }
 
-#[cfg(generic_array)]
+#[cfg(feature = "generic-array1")]
 impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: DimMarker + IsLess<N> + Any + DimMarker,
+    Dim: DimMarker + IsLess<N> + Any + Unsigned,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -328,11 +339,11 @@ where
     }
 }
 
-#[cfg(generic_array)]
+#[cfg(feature = "generic-array1")]
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: DimMarker + IsLess<N> + Any,
+    Dim: Unsigned + IsLess<N> + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -389,7 +400,7 @@ where
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2);
 /// assert_eq!(8,x.calc(v));
 /// ```
-/// The dimention of variable is statically checked.
+/// The dimension of variable is statically checked.
 /// ```compile_fail
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
@@ -409,8 +420,15 @@ where
     Dim: DimMarker,
 {
     /// create new instance
-    pub fn new(c: Coefficient, d: Degree) -> Self {
+    pub fn new(c: Coefficient, d: Degree) -> Self
+    where
+        Dim: Default,
+    {
         Self(c, d, Default::default())
+    }
+
+    pub fn with_dimension(c: Coefficient, d: Degree, dim: Dim) -> Self {
+        Self(c, d, dim)
     }
 
     /// change the dimension
@@ -426,7 +444,7 @@ where
     }
 }
 
-#[cfg(generic_array)]
+#[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
     T: Clone
@@ -437,7 +455,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: DimMarker + IsLess<N> + Any,
+    Dim: DimMarker + IsLess<N> + Any + Unsigned,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
@@ -463,7 +481,7 @@ where
                 return Arc::new(DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
                     self.1.clone() - Degree::one(),
-                    PhantomData,
+                    self.2,
                 ));
             }
         }
@@ -475,7 +493,7 @@ where
     }
 }
 
-#[cfg(generic_array)]
+#[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
     T: Clone
@@ -486,7 +504,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: DimMarker + IsLess<N> + Any,
+    Dim: IsLess<N> + Any + Unsigned,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
@@ -516,7 +534,7 @@ where
     /// assert_eq!(4,x.diff(0).diff(0).calc(v));
     /// assert_eq!(0,x.diff(0).diff(1).calc(v));
     /// //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
-    /// let y = x.inner_borrow().change_dim::<U1>().to_expr();
+    /// let y = x.inner_borrow().change_dim(U1::default()).to_expr();
     /// assert_eq!(0,y.diff(0).calc(v));
     /// assert_eq!(12,y.diff(1).calc(v));
     /// ```
@@ -525,10 +543,10 @@ where
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
                 self.1.clone() - Degree::one(),
-                PhantomData,
+                self.2,
             )
         } else {
-            DimMonomial(T::zero(), Degree::one(), PhantomData)
+            DimMonomial(T::zero(), Degree::one(), self.2)
         }
     }
 }
@@ -608,5 +626,28 @@ where
         } else {
             DimMonomial(T::zero(), Degree::one(), self.2)
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::*;
+    #[test]
+    #[cfg(feature = "generic-array1")]
+    fn test_dim_monomial_ga() {
+        use generic_array::*;
+        use typenum::*;
+        let v = arr![i32; 2,3];
+        let dm = DimMonomial::<U0, i32, u8>::new(2, 2);
+
+        let x = dm.to_expr();
+        assert_eq!(8, x.diff(0).calc(v));
+        assert_eq!(0, x.diff(1).calc(v));
+        assert_eq!(4, x.diff(0).diff(0).calc(v));
+        assert_eq!(0, x.diff(0).diff(1).calc(v));
+        //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
+        let y = x.inner_borrow().change_dim(U1::default()).to_expr();
+        assert_eq!(0, y.diff(0).calc(v));
+        assert_eq!(12, y.diff(1).calc(v));
     }
 }
