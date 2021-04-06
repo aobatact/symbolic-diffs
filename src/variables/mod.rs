@@ -277,10 +277,11 @@ mod test {
         assert_eq!(0, x.diff(1).calc(v));
         assert_eq!(4, x.diff(0).diff(0).calc(v));
         assert_eq!(0, x.diff(0).diff(1).calc(v));
-        //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
+        let y1 = DimMonomial::<U1, i32, u8>::new(2, 2).to_expr();
         let y = x.inner_borrow().change_dim(U1::default()).to_expr();
         assert_eq!(0, y.diff(0).calc(v));
         assert_eq!(12, y.diff(1).calc(v));
+        assert_eq!(y, y1);
     }
 
     #[test]
@@ -297,9 +298,10 @@ mod test {
         assert_eq!(0, x.diff(1).calc(v));
         assert_eq!(4, x.diff(0).diff(0).calc(v));
         assert_eq!(0, x.diff(0).diff(1).calc(v));
-        //let y = DimMonomial::<U1,i32,u8>::new(2,2).to_expr();
+        let y1 = DimMonomial::<U1, i32, u8>::new(2, 2).to_expr();
         let y = x.inner_borrow().change_dim(U1::default()).to_expr();
         assert_eq!(0, y.diff(0).calc(v));
         assert_eq!(12, y.diff(1).calc(v));
+        assert_eq!(y, y1);
     }
 }

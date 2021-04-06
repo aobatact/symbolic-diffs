@@ -15,12 +15,11 @@ impl BinaryOp for AddOp {
 /// ```
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
-/// # use generic_array::*;
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
 /// let y = DimMonomial::<U1,i32,u8>::new(3,1);
 /// let xy = x + y;
-/// let v = arr![i32; 1, 1];
-/// let v1 = arr![i32; 2, 3];
+/// let v = [1, 1];
+/// let v1 = [2, 3];
 /// assert_eq!(5,xy.calc(v));
 /// assert_eq!(4,xy.clone().diff(0).calc(v));
 /// assert_eq!(3,xy.clone().diff(1).calc(v));
@@ -82,12 +81,11 @@ impl BinaryOp for SubOp {
 /// ```
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
-/// # use generic_array::*;
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
 /// let y = DimMonomial::<U1,i32,u8>::new(3,1);
 /// let xy = x - y;
-/// let v = arr![i32; 1, 1];
-/// let v1 = arr![i32; 2, 3];
+/// let v = [1, 1];
+/// let v1 = [2, 3];
 /// assert_eq!(-1,xy.calc(v));
 /// assert_eq!(4,xy.clone().diff(0).calc(v));
 /// assert_eq!(-3,xy.clone().diff(1).calc(v));
@@ -162,12 +160,11 @@ impl BinaryOp for MulOp {
 /// ```
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
-/// # use generic_array::*;
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2).to_expr();
 /// let y = DimMonomial::<U1,i32,u8>::new(3,1);
 /// let xy = x * y;
-/// let v = arr![i32; 1, 1];
-/// let v1 = arr![i32; 2, 3];
+/// let v = [1, 1];
+/// let v1 = [2, 3];
 /// assert_eq!(6,xy.calc(v));
 /// assert_eq!(12,xy.clone().diff(0).calc(v));
 /// assert_eq!(6,xy.clone().diff(1).calc(v));
@@ -251,12 +248,11 @@ impl BinaryOp for DivOp {
 /// ```
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
-/// # use generic_array::*;
 /// let x = DimMonomial::<U0,i32,u8>::new(6,2).to_expr();
 /// let y = DimMonomial::<U1,i32,u8>::new(3,1);
 /// let xy = x / y;
-/// let v = arr![i32; 1, 1];
-/// let v1 = arr![i32; 6, 3];
+/// let v = [1, 1];
+/// let v1 = [6, 3];
 /// assert_eq!(2,xy.calc(v));
 /// assert_eq!(4,xy.clone().diff(0).calc(v));
 /// assert_eq!(-2,xy.clone().diff(1).calc(v));
@@ -369,8 +365,8 @@ impl UnaryOp for NegOp {
 /// # use generic_array::*;
 /// let x = DimMonomial::<U0,i32,u8>::new(6,2).to_expr();
 /// let y = -x;
-/// let v = arr![i32; 1, 1];
-/// let v1 = arr![i32; 6, 3];
+/// let v = [1, 1];
+/// let v1 = [6, 3];
 /// assert_eq!(-6,y.calc(v));
 /// assert_eq!(-216,y.calc(v1));
 /// ```

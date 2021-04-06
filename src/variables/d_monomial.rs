@@ -267,7 +267,7 @@ where
         + Any
         + Display,
     Dim: DimMarker + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
     fn calc_dyn(&self, v: &[T; D]) -> T {
         if !self.0.is_zero() {
@@ -313,7 +313,7 @@ where
         + Any
         + Display,
     Dim: DimMarker + Any,
-    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
     /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
