@@ -253,6 +253,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(generic_array)]
 mod tests {
     use crate::float_ops::*;
     //use crate::*;

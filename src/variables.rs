@@ -6,6 +6,7 @@ use core::{
     marker::PhantomData,
     ops::{Mul, Sub},
 };
+#[cfg(generic_array)]
 use generic_array::{ArrayLength, GenericArray};
 use num_traits::{One, Pow, Zero};
 use std::sync::Arc;
@@ -264,6 +265,7 @@ where
     }
 }
 
+#[cfg(generic_array)]
 impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
@@ -302,6 +304,7 @@ where
     }
 }
 
+#[cfg(generic_array)]
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
@@ -395,6 +398,7 @@ where
     }
 }
 
+#[cfg(generic_array)]
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
     T: Clone
@@ -443,6 +447,7 @@ where
     }
 }
 
+#[cfg(generic_array)]
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
     T: Clone
