@@ -5,9 +5,9 @@ use num_traits::{One, Pow, Zero};
 use std::fmt;
 use std::sync::Arc;
 
-//#[doc(hidden)]
-//mod dynamic;
+#[doc(hidden)]
 mod display;
+mod dynamic;
 mod float_ops;
 mod ops;
 mod variables;
@@ -56,6 +56,10 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     #[inline]
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
+    }
+
+    fn to_dyn_expr(self) -> DynExpr<Out,In>{
+        DynExpr(Arc::new(self))
     }
 }
 

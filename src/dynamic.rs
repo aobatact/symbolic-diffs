@@ -21,6 +21,16 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
     }
 }
 
+impl<Out, In> Display for DynExpr<Out, In>
+where
+    Out: Any,
+    In: ?Sized + Any,
+{
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        self.0.fmt(fmt)
+    }
+}
+
 impl<Out, In> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
     Out: Any,
@@ -106,7 +116,7 @@ where
             other
         } else {
             //let m = BinarySym::new_with_op(MulOp,self, other);
-            panic!("mul is not working for DynExpr");
+            //panic!("mul is not working for DynExpr");
             let m = MulSym::new(self, other);
             m.to_dyn_expr()
             //let arc = Arc::new(m);
@@ -202,14 +212,14 @@ macro_rules! as_dyn_expr {
 
 impl<Out, In> ExNumConsts for DynExpr<Out, In>
 where
-    Out: ExNumConsts + Any + Clone + Zero,
+    Out: ExNumConsts + Any + Clone + Zero + Display,
 {
     as_dyn_expr!(c e, ln_10, ln_2, log10_e, log10_2, log2_e, log2_10, two);
 }
 
 impl<Out, In> ExNumOps for DynExpr<Out, In>
 where
-    Out: ExNumOps + Any + Clone,
+    Out: ExNumOps + Any + Clone + Zero + Display,
     In: Any,
 {
     as_dyn_expr!(f exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, recip, exp_m1, exp2, ln_1p, log2, log10,);
@@ -259,7 +269,7 @@ impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbo
     }
 }
 */
-pub type DynExprMV<T, Dim> = DynExpr<T, GenericArray<T, Dim>>;
+//pub type DynExprMV<T, Dim> = DynExpr<T, GenericArray<T, Dim>>;
 
 #[cfg(test)]
 mod tests {
@@ -302,7 +312,7 @@ mod tests {
     #[test]
     fn monomial() {
         let x = DimMonomial::<U0, f32, u8>::new(2., 3).to_expr();
-        let v = arr![f32; 2.0];
+        let v = [2.0];
         assert_eq!(16., x.calc_dyn(&v));
         let y = x + x;
         assert_eq!(32., y.calc_dyn(&v));
@@ -322,11 +332,11 @@ mod tests {
 
     #[test]
     fn dynexpr() {
-        let v1 = arr![f32; 2., 3.];
-        let x: DynExpr<f32, GenericArray<f32, U2>> =
+        let v1 = [2., 3.];
+        let x: DynExpr<f32, _> =
             DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
         //let x = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
-        let y: DynExpr<f32, GenericArray<f32, U2>> =
+        let y: DynExpr<f32, _> =
             DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
         assert_eq!(8., x.calc(v1));
         let xpy = x.clone() + y.clone();
@@ -334,12 +344,14 @@ mod tests {
         let xsy = x.clone() - y.clone();
         assert_eq!(17., xsy.calc(v1));
 
-        // compile freeze with below
-        // let xy = x.clone() * y.clone();
-        // assert_eq!(-72., xy.calc(v1));
-        // let xdy = x.clone() / y.clone();
+        let xy = x.clone() * y.clone();
+        assert_eq!(-72., xy.calc(v1));
+        //let xdy = x.clone() / y.clone();
+
+        //compile freeze for div
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
         //let xe = float_ops::ExNumOps::exp(x);
+        //assert_eq!((2_f32).exp() ,xe.calc(v1));
 
         //let mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
         //let add = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
