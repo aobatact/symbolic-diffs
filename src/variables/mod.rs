@@ -10,10 +10,17 @@ use typenum::marker_traits::Unsigned;
 mod d_monomial;
 mod d_variable;
 
+/// Dimension marker. Use this to mark the variables dimension.
+/// ```
+/// # use typenum;
+/// let dim1 = symbolic_diffs::Dim::<0>;
+/// let dim2 = typenum::U1::new();
+/// ```
 pub trait DimMarker: Copy {
     fn dim(self) -> usize;
 }
 
+/// Dimention marker using const generics.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Dim<const DM: usize>;
 
