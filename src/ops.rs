@@ -511,24 +511,3 @@ where
         UnarySym::new_with_op(UnaryPowOp(r), self.inner()).into()
     }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use crate::*;
-    #[test]
-    fn add() {
-        let x: Expr<Variable, isize> = Variable.into();
-        assert_eq!(2, x.calc(2));
-        assert_eq!(0, x.diff(1).calc(2));
-        let _x_m2 = x.clone() + x.clone();
-        let x_m2 = x + x;
-        assert_eq!(4, x_m2.calc(2));
-        assert_eq!(6, x_m2.calc(3));
-        let c2: Const<isize> = 2.into();
-        let x_2 = x + c2;
-        assert_eq!(4, x_2.calc(2));
-        assert_eq!(5, x_2.calc(3));
-    }
-}
-*/
