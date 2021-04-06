@@ -17,13 +17,32 @@ use typenum::{
     True,
 };
 
+pub trait DimMarker: Default + Copy {
+    fn dim(self) -> usize;
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Dim<const DM: usize>;
+
+impl<const DM: usize> DimMarker for Dim<DM> {
+    fn dim(self) -> usize {
+        DM
+    }
+}
+
+impl<T: Unsigned> DimMarker for T {
+    fn dim(self) -> usize {
+        T::USIZE
+    }
+}
+
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```
 /// # use symbolic_diffs::*;
 /// let x = ZeroSym;
 /// assert_eq!(0,x.calc(6));
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ZeroSym;
 impl<Out, In> DynamicSymbol<Out, In> for ZeroSym
 where
@@ -69,7 +88,7 @@ where
 /// let x = ZeroSym;
 /// assert_eq!(0,x.calc(6));
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OneSym;
 impl<Out, In> DynamicSymbol<Out, In> for OneSym
 where
@@ -113,7 +132,7 @@ where
 /// let x : Const<isize> = 3.into();
 /// assert_eq!(3,x.calc(6));
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Const<T>(pub(crate) T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
@@ -177,12 +196,13 @@ where
 }
 
 ///[`Symbol`](`crate::Symbol`) represents an single variable.
+/// Use this when you have only one dimentions.
 /// ```
 /// # use symbolic_diffs::*;
 /// let x = Variable;
 /// assert_eq!(6,x.calc(6));
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Variable;
 impl<Out, In> DynamicSymbol<Out, In> for Variable
 where
@@ -253,15 +273,19 @@ where
 /// let x = DimVariable::<U2>::new();
 /// assert_eq!(0,x.calc(v));
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct DimVariable<Dim: Unsigned>(PhantomData<Dim>);
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct DimVariable<Dim: DimMarker>(Dim);
 
 impl<Dim> DimVariable<Dim>
 where
-    Dim: Unsigned,
+    Dim: DimMarker,
 {
     pub fn new() -> DimVariable<Dim> {
-        DimVariable(PhantomData)
+        DimVariable(Default::default())
+    }
+
+    pub fn dim(&self) -> usize {
+        self.0.clone().dim()
     }
 }
 
@@ -269,7 +293,7 @@ where
 impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + IsLess<N> + Any,
+    Dim: DimMarker + IsLess<N> + Any + DimMarker,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -289,10 +313,10 @@ where
 impl<Dim, T> DynamicSymbol<T, [T]> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + Any,
+    Dim: DimMarker + Any,
 {
     fn calc_dyn(&self, v: &[T]) -> T {
-        v[Dim::USIZE].clone()
+        v[self.0.dim()].clone()
     }
 
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
@@ -308,7 +332,7 @@ where
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + IsLess<N> + Any,
+    Dim: DimMarker + IsLess<N> + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -344,11 +368,11 @@ where
 impl<Dim, T> Symbol<T, [T]> for DimVariable<Dim>
 where
     T: Clone + Zero + One,
-    Dim: Unsigned + Any,
+    Dim: DimMarker + Any,
 {
     type Derivative = OneSym;
     fn calc_ref(&self, v: &[T]) -> T {
-        v[Dim::USIZE].clone()
+        v[self.dim()].clone()
     }
 
     fn diff(self, _dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
@@ -374,27 +398,31 @@ where
 /// let x = DimMonomial::<U2,i32,u8>::new(2,2);
 /// assert_eq!(0,x.calc(v));
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct DimMonomial<Dim: Unsigned, Coefficient, Degree>(
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct DimMonomial<Dim: DimMarker, Coefficient, Degree>(
     pub(crate) Coefficient,
     pub(crate) Degree,
-    PhantomData<Dim>,
+    Dim,
 );
 impl<Dim, Coefficient, Degree> DimMonomial<Dim, Coefficient, Degree>
 where
-    Dim: Unsigned,
+    Dim: DimMarker,
 {
     /// create new instance
     pub fn new(c: Coefficient, d: Degree) -> Self {
-        Self(c, d, PhantomData)
+        Self(c, d, Default::default())
     }
 
     /// change the dimension
-    pub fn change_dim<NewDim>(self) -> DimMonomial<NewDim, Coefficient, Degree>
+    pub fn change_dim<NewDim>(self, d: NewDim) -> DimMonomial<NewDim, Coefficient, Degree>
     where
-        NewDim: Unsigned,
+        NewDim: DimMarker,
     {
-        DimMonomial(self.0, self.1, PhantomData)
+        DimMonomial(self.0, self.1, d)
+    }
+
+    pub fn dim(&self) -> usize {
+        self.2.dim()
     }
 }
 
@@ -409,7 +437,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: Unsigned + IsLess<N> + Any,
+    Dim: DimMarker + IsLess<N> + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
@@ -458,7 +486,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: Unsigned + IsLess<N> + Any,
+    Dim: DimMarker + IsLess<N> + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
@@ -515,7 +543,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: Unsigned + Any + Display,
+    Dim: DimMarker + Any + Display,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
 {
     fn calc_dyn(&self, v: &[T]) -> T {
@@ -524,21 +552,21 @@ where
                 self.0.clone() * v[Dim::USIZE].clone()
             } else */
             {
-                self.0.clone() * v[Dim::USIZE].clone().pow(self.1.clone())
+                self.0.clone() * v[self.dim()].clone().pow(self.1.clone())
             }
         } else {
             T::zero()
         }
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
-        if dm == Dim::USIZE {
+        if dm == self.dim() {
             if self.1.is_one() {
                 return Arc::new(Const::from(T::one()));
             } else if !self.1.is_zero() {
                 return Arc::new(DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
                     self.1.clone() - Degree::one(),
-                    PhantomData,
+                    self.2,
                 ));
             }
         }
@@ -560,7 +588,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: Unsigned + Any + Display,
+    Dim: DimMarker + Any + Display,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any + Display,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
@@ -571,14 +599,14 @@ where
     }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
-        if dm == Dim::USIZE && !self.1.is_zero() {
+        if dm == self.dim() && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
                 self.1.clone() - Degree::one(),
-                PhantomData,
+                self.2,
             )
         } else {
-            DimMonomial(T::zero(), Degree::one(), PhantomData)
+            DimMonomial(T::zero(), Degree::one(), self.2)
         }
     }
 }

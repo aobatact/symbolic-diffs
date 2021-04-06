@@ -25,17 +25,17 @@ impl Display for Variable {
     }
 }
 
-impl<Dim: typenum::Unsigned> Display for DimVariable<Dim> {
+impl<Dim: DimMarker> Display for DimVariable<Dim> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        f.write_fmt(format_args!("x_{}", Dim::to_i64()))
+        f.write_fmt(format_args!("x_{}", self.dim()))
     }
 }
 
-impl<Dim: typenum::Unsigned, Coefficient: Display, Degree: Display> Display
+impl<Dim: DimMarker, Coefficient: Display, Degree: Display> Display
     for DimMonomial<Dim, Coefficient, Degree>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        f.write_fmt(format_args!("{} x_{}^{}", self.0, Dim::to_i64(), self.1))
+        f.write_fmt(format_args!("{} x_{}^{}", self.0, self.dim(), self.1))
     }
 }
 
