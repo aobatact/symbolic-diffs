@@ -25,17 +25,22 @@ impl Display for Variable {
     }
 }
 
-impl<Dim: typenum::Unsigned> Display for DimVariable<Dim> {
+impl<Dim: DimMarker> Display for DimVariable<Dim> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        f.write_fmt(format_args!("x_{}", Dim::to_i64()))
+        f.write_fmt(format_args!("x_{}", self.dim()))
     }
 }
 
-impl<Dim: typenum::Unsigned, Coefficient: Display, Degree: Display> Display
+impl<Dim: DimMarker, Coefficient: Display + From<Degree>, Degree: Clone> Display
     for DimMonomial<Dim, Coefficient, Degree>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        f.write_fmt(format_args!("{} x_{}^{}", self.0, Dim::to_i64(), self.1))
+        f.write_fmt(format_args!(
+            "{} x_{}^{}",
+            self.0,
+            self.dim(),
+            Coefficient::from(self.1.clone())
+        ))
     }
 }
 
@@ -65,14 +70,14 @@ mod tests {
     #[test]
     fn diplay_test() {
         let x: Expr<Variable, f32> = Variable.into();
-        assert_eq!("x",x.to_string());
+        assert_eq!("x", x.to_string());
         let x1 = x + Const(1.);
-        assert_eq!("x + 1",x1.to_string());
+        assert_eq!("x + 1", x1.to_string());
         let exp = x.exp();
-        assert_eq!("exp( x)",exp.to_string());
+        assert_eq!("exp( x)", exp.to_string());
         let exp1 = x1.exp();
-        assert_eq!("exp( x + 1)",exp1.to_string());
+        assert_eq!("exp( x + 1)", exp1.to_string());
         let xexp = x * exp;
-        assert_eq!("(x)(exp( x))",xexp.to_string());
+        assert_eq!("(x)(exp( x))", xexp.to_string());
     }
 }

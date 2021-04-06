@@ -129,7 +129,7 @@ macro_rules! FloatOps {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
         pub struct $op;
         impl UnaryOp for $op {
-            fn op_name<'a>() -> &'a str{
+            fn op_name<'a>() -> &'a str {
                 std::stringify!($me)
             }
         }
@@ -253,6 +253,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(generic_array)]
 mod tests {
     use crate::float_ops::*;
     //use crate::*;
