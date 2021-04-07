@@ -21,6 +21,12 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
     }
 }
 
+impl<Out, In: ?Sized> From<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In> {
+    fn from(sym: Arc<dyn DynamicSymbol<Out, In>>) -> Self {
+        DynExpr(sym)
+    }
+}
+
 impl<Out, In> Display for DynExpr<Out, In>
 where
     Out: Any,
@@ -57,7 +63,7 @@ where
         self.calc_dyn(value)
     }
     fn diff(self, dim: usize) -> DynExpr<Out, In> {
-        DynExpr(self.diff_dyn(dim))
+        self.diff_dyn(dim).into()
     }
 }
 
@@ -146,6 +152,7 @@ where
         if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
             self
         } else {
+            unimplemented!("with div, compile freeze");
             DynExpr(Arc::new(DivSym::new(self.0, other)))
         }
     }
@@ -162,6 +169,9 @@ where
     }
     fn is_zero(&self) -> bool {
         self.try_downcast::<ZeroSym>().is_some()
+            || self
+                .try_downcast::<Const<Out>>()
+                .map_or(false, |Const(x)| x.is_zero())
     }
 }
 
@@ -175,7 +185,7 @@ where
         DynExpr(Arc::new(OneSym))
     }
     fn is_one(&self) -> bool {
-        self.try_downcast::<OneSym>().is_some()
+        self.try_downcast::<OneSym>().is_some() //|| self.try_downcast::<Const<Out>>().map_or(false,|Const(x)|x.is_one())
     }
 }
 
@@ -274,8 +284,6 @@ impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbo
 #[cfg(test)]
 mod tests {
     use crate::dynamic::*;
-    //use crate::float_ops::*;
-    use crate::*;
     use generic_array::*;
     use std::sync::Arc;
     use typenum::*;
@@ -333,11 +341,9 @@ mod tests {
     #[test]
     fn dynexpr() {
         let v1 = [2., 3.];
-        let x: DynExpr<f32, _> =
-            DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        let x: DynExpr<f32, _> = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
         //let x = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
-        let y: DynExpr<f32, _> =
-            DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
+        let y: DynExpr<f32, _> = DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
         assert_eq!(8., x.calc(v1));
         let xpy = x.clone() + y.clone();
         assert_eq!(-1., xpy.calc(v1));
@@ -346,14 +352,18 @@ mod tests {
 
         let xy = x.clone() * y.clone();
         assert_eq!(-72., xy.calc(v1));
-        //let xdy = x.clone() / y.clone();
 
         //compile freeze for div
+        //let xdy = x.clone() / y.clone();
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
-        //let xe = float_ops::ExNumOps::exp(x);
-        //assert_eq!((2_f32).exp() ,xe.calc(v1));
 
-        //let mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
-        //let add = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
+        let xe = float_ops::ExNumOps::exp(x.clone());
+        assert_eq!((8_f32).exp(), xe.calc(v1));
+
+        let _add = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
+        let _sub = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
+        let _mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
+        //compile freeze for div
+        //let _div = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
     }
 }

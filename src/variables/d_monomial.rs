@@ -2,7 +2,7 @@ use crate::*;
 use core::{
     any::Any,
     fmt::Display,
-    ops::{Mul, Sub},
+    ops::{Add, Mul, Sub},
 };
 use num_traits::{One, Pow, Zero};
 use std::sync::Arc;
@@ -40,7 +40,7 @@ use typenum::{
 pub struct DimMonomial<Dim: DimMarker, Coefficient, Degree>(
     pub(crate) Coefficient,
     pub(crate) Degree,
-    Dim,
+    pub(crate) Dim,
 );
 impl<Dim, Coefficient, Degree> DimMonomial<Dim, Coefficient, Degree>
 where
@@ -333,5 +333,65 @@ where
         } else {
             DimMonomial(T::zero(), Degree::one(), self.2)
         }
+    }
+}
+
+//T = Coefficient
+impl<Dim, T, Degree, const N: usize> From<DimMonomial<Dim, T, Degree>>
+    for crate::ops::MulSym<
+        UnarySym<crate::ops::UnaryPowOp<Degree>, DimVariable<Dim>, T, [T; N]>,
+        Const<T>,
+        T,
+        [T; N],
+    >
+where
+    T: Add<Output = T>
+        + Sub<Output = T>
+        + Mul<Output = T>
+        + num_traits::Pow<Degree, Output = T>
+        + Clone
+        + Zero
+        + Display
+        + Any,
+    Dim: DimMarker + Any,
+    DimVariable<Dim>: Symbol<T, [T; N]>,
+    Degree: Sub<Output = Degree> + One + Clone + Default + Any,
+{
+    fn from(dm: DimMonomial<Dim, T, Degree>) -> Self {
+        let dv = DimVariable::with_dimension(dm.2);
+        crate::ops::MulSym::new(
+            UnarySym::new_with_op(crate::ops::UnaryPowOp(dm.1), dv),
+            Const(dm.0),
+        )
+    }
+}
+
+//T = Coefficient
+impl<Dim, T, Degree> From<DimMonomial<Dim, T, Degree>>
+    for crate::ops::MulSym<
+        UnarySym<crate::ops::UnaryPowOp<Degree>, DimVariable<Dim>, T, [T]>,
+        Const<T>,
+        T,
+        [T],
+    >
+where
+    T: Add<Output = T>
+        + Sub<Output = T>
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + Clone
+        + Zero
+        + Display
+        + Any,
+    Dim: DimMarker + Any,
+    DimVariable<Dim>: Symbol<T, [T]>,
+    Degree: Sub<Output = Degree> + One + Clone + Default + Any,
+{
+    fn from(dm: DimMonomial<Dim, T, Degree>) -> Self {
+        let dv = DimVariable::with_dimension(dm.2);
+        crate::ops::MulSym::new(
+            UnarySym::new_with_op(crate::ops::UnaryPowOp(dm.1), dv),
+            Const(dm.0),
+        )
     }
 }

@@ -274,16 +274,7 @@ where
         self.sym1.calc_dyn(value) / self.sym2.calc_dyn(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        let res = BinarySym::new_with_op(
-            DivOp,
-            BinarySym::new_with_op(
-                SubOp,
-                BinarySym::new_with_op(MulOp, self.sym1.diff_dyn(dm), self.sym2.clone()),
-                BinarySym::new_with_op(MulOp, self.sym1.clone(), self.sym2.diff_dyn(dm)),
-            ),
-            BinarySym::new_with_op(MulOp, self.sym2.clone(), self.sym2.clone()),
-        );
-        Arc::new(res)
+        Arc::new(self.clone().diff(dm))
     }
     fn as_any(&self) -> &(dyn Any) {
         self

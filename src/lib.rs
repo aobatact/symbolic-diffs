@@ -5,12 +5,13 @@ use num_traits::{One, Pow, Zero};
 use std::fmt;
 use std::sync::Arc;
 
-#[doc(hidden)]
 mod display;
+//#[doc(hidden)]
 mod dynamic;
-mod float_ops;
-mod ops;
-mod variables;
+pub mod float_ops;
+pub mod ops;
+pub mod variables;
+//mod enum_based;
 
 pub use float_ops::{ExNumConsts, ExNumOps};
 pub use variables::*;
@@ -58,7 +59,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
         self.into()
     }
 
-    fn to_dyn_expr(self) -> DynExpr<Out,In>{
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
         DynExpr(Arc::new(self))
     }
 }
@@ -204,11 +205,7 @@ pub trait UnaryOp {
 
 /// [`Symbol`](`crate::Symbol`) represent Unary Operation.
 #[derive(Debug, PartialEq, Eq)]
-pub struct UnarySym<Op, Sym, Out, In: ?Sized = Out>
-where
-    Op: UnaryOp,
-    Sym: Symbol<Out, In>,
-{
+pub struct UnarySym<Op, Sym, Out, In: ?Sized = Out> {
     op: Op,
     sym: Sym,
     po: PhantomData<Out>,
@@ -312,12 +309,7 @@ pub trait BinaryOp {
 
 /// [`Symbol`](`crate::Symbol`) represent Binary Operation.
 #[derive(Debug, PartialEq, Eq)]
-pub struct BinarySym<Op, Sym1, Sym2, Out, In: ?Sized = Out>
-where
-    Op: BinaryOp,
-    Sym1: Symbol<Out, In>,
-    Sym2: Symbol<Out, In>,
-{
+pub struct BinarySym<Op, Sym1, Sym2, Out, In: ?Sized = Out> {
     op: Op,
     sym1: Sym1,
     sym2: Sym2,
