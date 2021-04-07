@@ -58,6 +58,12 @@ where
     }
 }
 
+impl<Dim: DimMarker + Default> From<Variable> for DimVariable<Dim> {
+    fn from(_: Variable) -> Self {
+        DimVariable::new()
+    }
+}
+
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where

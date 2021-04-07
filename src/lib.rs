@@ -8,10 +8,10 @@ use std::sync::Arc;
 mod display;
 //#[doc(hidden)]
 mod dynamic;
+mod enum_based;
 pub mod float_ops;
 pub mod ops;
 pub mod variables;
-//mod enum_based;
 
 pub use float_ops::{ExNumConsts, ExNumOps};
 pub use variables::*;

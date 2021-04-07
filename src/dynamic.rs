@@ -75,7 +75,7 @@ impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
 
 impl<Out, In> Add<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Add<Output = Out> + Zero,
+    Out: Any + Add<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -85,14 +85,14 @@ where
         } else if other.is_zero() {
             self
         } else {
-            DynExpr(Arc::new(AddSym::new(self.0, other.0)))
+            AddSym::new(self.0, other.0).to_dyn_expr()
         }
     }
 }
 
 impl<Out, In> Sub<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone + Any + Sub<Output = Out> + Zero,
+    Out: Any + Sub<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -102,7 +102,7 @@ where
         } else if other.is_zero() {
             self
         } else {
-            DynExpr(Arc::new(SubSym::new(self.0, other.0)))
+            SubSym::new(self.0, other.0).to_dyn_expr()
         }
     }
 }
@@ -116,32 +116,19 @@ where
     fn mul(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
         let l = self.inner_any();
         let r = other.inner_any();
-        if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
+        if self.is_zero() || r.downcast_ref::<OneSym>().is_some() {
             self
-        } else if r.downcast_ref::<ZeroSym>().is_some() || l.downcast_ref::<OneSym>().is_some() {
+        } else if other.is_zero() || l.downcast_ref::<OneSym>().is_some() {
             other
         } else {
-            //let m = BinarySym::new_with_op(MulOp,self, other);
-            //panic!("mul is not working for DynExpr");
-            let m = MulSym::new(self, other);
-            m.to_dyn_expr()
-            //let arc = Arc::new(m);
-            //DynExpr(arc)
-            //DynExpr(Arc::new())
-            //panic!("mul");
+            MulSym::new(self, other).to_dyn_expr()
         }
     }
 }
 
 impl<Out, In> Div<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Clone
-        + Any
-        + Add<Output = Out>
-        + Mul<Output = Out>
-        + Sub<Output = Out>
-        + Div<Output = Out>
-        + Zero,
+    Out: Any + Add<Output = Out> + Mul<Output = Out> + Sub<Output = Out> + Div<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -153,20 +140,21 @@ where
             self
         } else {
             unimplemented!("with div, compile freeze");
-            DynExpr(Arc::new(DivSym::new(self.0, other)))
+            DivSym::new(self.0, other).to_dyn_expr()
         }
     }
 }
 
 impl<Out, In> Zero for DynExpr<Out, In>
 where
-    Out: Clone + Any + Add<Output = Out> + Zero,
+    Out: Any + Add<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     #[inline]
     fn zero() -> Self {
-        DynExpr(Arc::new(ZeroSym))
+        ZeroSym.to_dyn_expr()
     }
+    #[inline]
     fn is_zero(&self) -> bool {
         self.try_downcast::<ZeroSym>().is_some()
             || self
@@ -177,13 +165,14 @@ where
 
 impl<Out, In> One for DynExpr<Out, In>
 where
-    Out: Clone + Any + Add<Output = Out> + Zero + One,
+    Out: Any + Add<Output = Out> + Zero + One,
     In: ?Sized + Any,
 {
     #[inline]
     fn one() -> Self {
-        DynExpr(Arc::new(OneSym))
+        OneSym.to_dyn_expr()
     }
+    #[inline]
     fn is_one(&self) -> bool {
         self.try_downcast::<OneSym>().is_some() //|| self.try_downcast::<Const<Out>>().map_or(false,|Const(x)|x.is_one())
     }
@@ -191,7 +180,7 @@ where
 
 impl<Out, In> Neg for DynExpr<Out, In>
 where
-    Out: Clone + Any + Neg<Output = Out> + Zero,
+    Out: Any + Neg<Output = Out> + Zero,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -199,7 +188,7 @@ where
         if self.is_zero() {
             DynExpr::zero()
         } else {
-            DynExpr(Arc::new(NegSym::new_with_op(NegOp, self.0)))
+            NegSym::new_with_op(NegOp, self.0).to_dyn_expr()
         }
     }
 }
