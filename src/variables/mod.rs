@@ -37,6 +37,15 @@ impl<T: Unsigned> DimMarker for T {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct DimWrap(pub usize);
+
+impl DimMarker for DimWrap {
+    fn dim(self) -> usize {
+        self.0
+    }
+}
+
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```
 /// # use symbolic_diffs::*;
@@ -134,7 +143,7 @@ where
 /// assert_eq!(3,x.calc(6));
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Const<T>(pub(crate) T);
+pub struct Const<T>(pub T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
     Out: Any + Zero + Clone + Display,
@@ -213,7 +222,8 @@ where
     fn calc_dyn(&self, value: &In) -> Out {
         value.to_owned()
     }
-    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        debug_assert!(dm == 0, "Should use DimVariable instead for non zero dim.");
         Arc::new(OneSym)
     }
 
