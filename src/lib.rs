@@ -6,7 +6,6 @@ pub mod variables;
 
 pub use variables::*;
 
-/// Trait for Symbol using dynamic.
 pub trait DynamicSymbol<Out, In: ?Sized>: Any {
     fn calc_dyn(&self, value: &In) -> Out;
     fn diff_dyn(&self) -> Arc<dyn DynamicSymbol<Out, In>>;
@@ -174,14 +173,17 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ops::*;
     use crate::*;
     use std::sync::Arc;
+
     #[test]
     fn variable() {
         let x: Expr<Variable, isize> = Variable.into();
         let y: Expr<Variable, isize> = Variable.into();
 
-        //let n = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
+        let add = DynExpr(Arc::new(crate::ops::AddSym::new(x.clone(), y.clone())));
+        let sub = DynExpr(Arc::new(crate::ops::SubSym::new(x.clone(), y.clone())));
+        let mul = DynExpr(Arc::new(crate::ops::MulSym::new(x.clone(), y.clone())));
+        //let div = DynExpr(Arc::new(crate::ops::DivSym::new(x.clone(), y.clone())));
     }
 }
