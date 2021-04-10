@@ -12,7 +12,6 @@ pub use variables::*;
 pub trait DynamicSymbol<Out, In: ?Sized>: Any {
     fn calc_dyn(&self, value: &In) -> Out;
     fn diff_dyn(&self) -> Arc<dyn DynamicSymbol<Out, In>>;
-    fn as_any(&self) -> &(dyn Any);
 }
 
 pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
@@ -45,9 +44,6 @@ where
     }
     fn diff_dyn(&self) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         self.as_ref().diff_dyn()
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
     }
 }
 
@@ -126,10 +122,6 @@ where
     }
     fn diff_dyn(&self) -> Arc<dyn DynamicSymbol<Out, In>> {
         self.0.diff_dyn()
-    }
-
-    fn as_any(&self) -> &(dyn Any) {
-        self
     }
 }
 

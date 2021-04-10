@@ -6,18 +6,7 @@ use core::{
 };
 use std::sync::Arc;
 
-impl<Out, In: ?Sized> DynExpr<Out, In> {
-    pub fn inner_any(&self) -> &(dyn Any) {
-        self.0.as_ref().as_any()
-    }
-    pub fn try_downcast<T>(&self) -> Option<&T>
-    where
-        T: Any,
-    {
-        self.inner_any().downcast_ref::<T>()
-    }
-}
-
+/*
 unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Send for DynExpr<Out, In> {}
 unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Sync for DynExpr<Out, In> {}
 
@@ -37,9 +26,6 @@ where
     }
     fn diff_dyn(&self) -> Arc<(dyn DynamicSymbol<Out, In>)> {
         self.0.diff_dyn()
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
     }
 }
 
@@ -105,6 +91,7 @@ where
         DivSym::new(self.0, other).to_dyn_expr()
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -114,9 +101,7 @@ mod tests {
     #[test]
     fn variable() {
         let x: Expr<Variable, isize> = Variable.into();
-        assert_eq!(1, x.calc_dyn(&1));
         let y: Expr<Variable, isize> = Variable.into();
-        //let y = x + x;
 
         let n = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
     }

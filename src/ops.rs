@@ -26,9 +26,6 @@ where
             self.sym2.diff_dyn(),
         ))
     }
-    fn as_any(&self) -> &(dyn Any) {
-        self
-    }
 }
 
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
@@ -67,9 +64,6 @@ where
             self.sym1.diff_dyn(),
             self.sym2.diff_dyn(),
         ))
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
     }
 }
 
@@ -111,9 +105,6 @@ where
             BinarySym::new_with_op(MulOp, self.sym1.clone(), sym2diff),
         );
         Arc::new(df)
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
     }
 }
 
@@ -157,9 +148,6 @@ where
     }
     fn diff_dyn(&self) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff())
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
     }
 }
 
