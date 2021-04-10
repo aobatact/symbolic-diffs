@@ -81,11 +81,6 @@ where
     In: ?Sized,
 {
     type Derivative = ZeroSym;
-    ///Returns zero.
-    #[inline]
-    fn calc_ref(&self, _value: &In) -> Out {
-        Out::zero()
-    }
 
     ///Returns Zero Symbol.
     #[inline]
@@ -125,12 +120,6 @@ where
     In: ?Sized,
 {
     type Derivative = ZeroSym;
-    ///Returns zero.
-    #[inline]
-    fn calc_ref(&self, _value: &In) -> Out {
-        Out::one()
-    }
-
     ///Returns Zero Symbol.
     #[inline]
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -169,10 +158,6 @@ where
     In: ?Sized,
 {
     type Derivative = ZeroSym;
-    /// returns self.
-    fn calc_ref(&self, _value: &In) -> Out {
-        self.0.clone()
-    }
     /// returns [`ZeroSym`](`crate::ZeroSym`)
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
@@ -240,10 +225,6 @@ where
     In: ToOwned<Owned = Out> + ?Sized,
 {
     type Derivative = OneSym;
-    /// Returns cloned `value`
-    fn calc_ref(&self, value: &In) -> Out {
-        value.to_owned()
-    }
     /// Returns [`ZeroSym`](`crate::ZeroSym`)
     ///
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.

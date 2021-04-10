@@ -145,10 +145,6 @@ macro_rules! FloatOps {
             In: ?Sized + Any,
         {
             type Derivative = impl Symbol<Out, In>;
-            fn calc_ref(&self, v: &In) -> Out {
-                let inner = self.sym.calc_dyn(v);
-                inner.$me()
-            }
             fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
                 let df = self.sym.clone().diff(dm).to_expr();
                 let y = $ex(self);
@@ -248,9 +244,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.calc_dyn(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let sym1 = self.sym1.clone();
         let sym2 = self.sym2.clone();

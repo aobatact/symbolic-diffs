@@ -34,10 +34,6 @@ pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
 pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     /// return type for `diff`
     type Derivative: Symbol<Out, In>;
-    /// Calculate the value of this expression.
-    /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
-    #[deprecated]
-    fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
@@ -89,10 +85,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
-    #[inline]
-    fn calc_ref(&self, value: &In) -> Out {
-        self.calc_dyn(value)
-    }
     #[inline]
     fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         self.diff_dyn(dim)
@@ -153,10 +145,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = Expr<Sym::Derivative, Out, In>;
-    #[inline]
-    fn calc_ref(&self, value: &In) -> Out {
-        self.0.calc_dyn(value)
-    }
     #[inline]
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         self.0.diff(dm).into()

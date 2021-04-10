@@ -62,9 +62,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = DynExpr<Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.calc_dyn(value)
-    }
     fn diff(self, dim: usize) -> DynExpr<Out, In> {
         self.diff_dyn(dim).into()
     }

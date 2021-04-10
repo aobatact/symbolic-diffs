@@ -142,11 +142,6 @@ where
     True: Same<<Dim as IsLess<N>>::Output>,
 {
     type Derivative = Const<T>;
-    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        debug_assert!(<Le<Dim, N> as Bit>::BOOL);
-        v[Dim::USIZE].clone()
-    }
-
     /// Returns [`ZeroSym`](`crate::ZeroSym`).
     ///
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
@@ -179,9 +174,6 @@ where
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
-    fn calc_ref(&self, v: &[T]) -> T {
-        v[self.dim()].clone()
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         if dm == self.0.dim() {
@@ -198,9 +190,6 @@ where
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
-    fn calc_ref(&self, v: &[T; D]) -> T {
-        v[self.dim()].clone()
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
         if dm == self.0.dim() {

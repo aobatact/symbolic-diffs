@@ -71,14 +71,6 @@ where
     Out: Zero + Clone + One,
 {
     type Derivative = EExpr<Out, In>;
-    fn calc_ref(&self, i: &In) -> Out {
-        match self {
-            EExpr::Zero => Out::zero(),
-            EExpr::One => Out::one(),
-            EExpr::Const(Const(c)) => c.clone(),
-            EExpr::Dynamic(d) => d.calc_dyn(i),
-        }
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         match self {
             EExpr::Zero | EExpr::One | EExpr::Const(_) => EExpr::Zero,

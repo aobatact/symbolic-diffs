@@ -60,9 +60,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         BinarySym::new(self.sym1.diff(dm), self.sym2.diff(dm))
     }
@@ -126,10 +123,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
-    #[inline]
-    fn calc_ref(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         BinarySym::new(self.sym1.diff(dm), self.sym2.diff(dm))
     }
@@ -212,9 +205,6 @@ where
         Out,
         In,
     >;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let sym2diff = self.sym2.clone().diff(dm);
         BinarySym::new(
@@ -299,9 +289,6 @@ where
         Out,
         In,
     >;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value) / self.sym2.calc_ref(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         BinarySym::new(
             BinarySym::new(
@@ -387,9 +374,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = NegSym<Sym::Derivative, Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        -self.sym.calc_ref(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         self.sym.diff(dm).into()
     }
@@ -439,10 +423,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        let x = self.sym.calc_ref(value);
-        x.clone() * x
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let one = Out::one();
         let two = one.clone() + one;
@@ -487,7 +467,7 @@ where
     fn calc_dyn(&self, value: &In) -> Out {
         self.sym.calc_dyn(value).pow(self.op.0.clone())
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>  {
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
     fn as_any(&self) -> &(dyn Any) {
@@ -503,12 +483,10 @@ where
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.calc_dyn(value)
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         (Expr::from(self.sym.clone().diff(dm))
-            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - Exp::one()), self.sym)).inner()
+            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - Exp::one()), self.sym))
+        .inner()
     }
 }
 

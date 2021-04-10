@@ -25,7 +25,7 @@ use typenum::{
 /// # use typenum::*;
 /// let v = [2_i32, 3];
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2);
-/// assert_eq!(8,x.calc_ref(&v));
+/// assert_eq!(8,x.calc_dyn(&v));
 /// ```
 /// The dimension of variable is statically checked for generic_array.
 /// ```compile_fail
@@ -137,11 +137,6 @@ where
     True: Same<<Dim as IsLess<N>>::Output>,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    #[inline]
-    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        self.calc_dyn(v)
-    }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
     ///
     /// There are some limitation for using [`diff`](`crate::Symbol::diff`) directory, so you can't call like bellow.
@@ -237,11 +232,6 @@ where
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    #[inline]
-    fn calc_ref(&self, v: &[T]) -> T {
-        self.calc_dyn(v)
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         if dm == self.dim() && !self.1.is_zero() {
@@ -316,11 +306,6 @@ where
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    #[inline]
-    fn calc_ref(&self, v: &[T; D]) -> T {
-        self.calc_dyn(v)
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
         debug_assert!(dm < D);
