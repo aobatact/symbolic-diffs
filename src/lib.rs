@@ -20,8 +20,7 @@ pub use variables::*;
 pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
-    /// This is for dynamic and must be same as [`calc_ref`](`crate::Symbol::calc_ref`)
-    fn calc_dyn(&self, value: &In) -> Out;
+    fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
@@ -48,7 +47,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     where
         In: Sized,
     {
-        self.calc_dyn(&value)
+        self.calc_ref(&value)
     }
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
     #[inline]
@@ -68,8 +67,8 @@ where
     Out: Any,
     In: ?Sized + Any,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.as_ref().calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.as_ref().calc_ref(value)
     }
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
         self.as_ref().diff_dyn(dim)
@@ -96,6 +95,7 @@ pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 /// We currently needs this because of the restriction around specialization.
 /// (We cannot impl Ops like Add because downside crate may impl Symbol for integer and this conflicts with current Add of integer)
+/// Use this when your operation is statically known. Use [`DynExpr`] for dynamic operation.
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug)]
 pub struct Expr<Sym: Symbol<Out, In>, Out, In: ?Sized = Out>(
@@ -158,8 +158,8 @@ where
     In: ?Sized + Any,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.0.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.0.calc_ref(value)
     }
     #[inline]
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -258,28 +258,6 @@ where
         }
     }
 }
-
-/*
-impl<Op, Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<Op, Sym, Out, In>
-where
-    Op: UnaryOp,
-    Sym: Symbol<Out, In>,
-    In: ?Sized,
-    Self: Symbol<Out, In>,
-{
-    #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.calc_dyn(value)
-    }
-    #[inline]
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().diff(dm))
-    }
-
-    fn as_any(&self) -> &(dyn Any) {
-        self
-    }
-}*/
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
 pub trait BinaryOp {

@@ -37,8 +37,8 @@ where
     In: ?Sized + Any,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.sym1.calc_dyn(value) + self.sym2.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(BinarySym::new_with_op(
@@ -100,8 +100,8 @@ where
     In: ?Sized + Any,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.sym1.calc_dyn(value) - self.sym2.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(BinarySym::new_with_op(
@@ -175,8 +175,8 @@ where
     In: ?Sized + Any,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.sym1.calc_dyn(value) * self.sym2.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         let sym2diff = self.sym2.diff_dyn(dm);
@@ -260,8 +260,8 @@ where
     In: ?Sized + Any,
 {
     #[inline]
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.sym1.calc_dyn(value) / self.sym2.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym1.calc_ref(value) / self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
@@ -356,8 +356,8 @@ where
     Out: Neg<Output = Out> + Any,
     In: ?Sized + Any,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
-        -self.sym.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        -self.sym.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
@@ -404,8 +404,8 @@ where
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
     In: ?Sized + Any,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
-        let x = self.sym.calc_dyn(value);
+    fn calc_ref(&self, value: &In) -> Out {
+        let x = self.sym.calc_ref(value);
         x.clone() * x
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -464,8 +464,8 @@ where
     Exp: Sub<Output = Exp> + One + Clone + Default + Any,
     In: ?Sized + Any,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.sym.calc_dyn(value).pow(self.op.0.clone())
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym.calc_ref(value).pow(self.op.0.clone())
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))

@@ -25,7 +25,7 @@ use typenum::{
 /// # use typenum::*;
 /// let v = [2_i32, 3];
 /// let x = DimMonomial::<U0,i32,u8>::new(2,2);
-/// assert_eq!(8,x.calc_dyn(&v));
+/// assert_eq!(8,x.calc_ref(&v));
 /// ```
 /// The dimension of variable is statically checked for generic_array.
 /// ```compile_fail
@@ -87,7 +87,7 @@ where
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
-    fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         if !self.0.is_zero() {
             /*if self.1.is_one() {
@@ -186,7 +186,7 @@ where
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
-    fn calc_dyn(&self, v: &[T]) -> T {
+    fn calc_ref(&self, v: &[T]) -> T {
         if !self.0.is_zero() {
             /*if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()
@@ -259,7 +259,7 @@ where
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
-    fn calc_dyn(&self, v: &[T; D]) -> T {
+    fn calc_ref(&self, v: &[T; D]) -> T {
         if !self.0.is_zero() {
             /*if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()

@@ -72,7 +72,7 @@ where
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
-    fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         v[Dim::USIZE].clone()
     }
@@ -94,7 +94,7 @@ where
     T: Clone + Zero + One,
     Dim: DimMarker + Any,
 {
-    fn calc_dyn(&self, v: &[T]) -> T {
+    fn calc_ref(&self, v: &[T]) -> T {
         v[self.0.dim()].clone()
     }
 
@@ -116,7 +116,7 @@ where
     T: Clone + Zero + One,
     Dim: DimMarker + Any,
 {
-    fn calc_dyn(&self, v: &[T; D]) -> T {
+    fn calc_ref(&self, v: &[T; D]) -> T {
         v[self.0.dim()].clone()
     }
 

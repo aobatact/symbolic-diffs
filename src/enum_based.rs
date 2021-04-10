@@ -43,13 +43,13 @@ where
     Self: Any,
     Out: Zero + Clone + One,
 {
-    fn calc_dyn(&self, i: &In) -> Out {
+    fn calc_ref(&self, i: &In) -> Out {
         match self {
             EExpr::Zero => Out::zero(),
             EExpr::One => Out::one(),
             EExpr::Const(Const(c)) => c.clone(),
-            //EExpr::Variable(v) => v.calc_dyn(i),
-            EExpr::Dynamic(d) => d.calc_dyn(i),
+            //EExpr::Variable(v) => v.calc_ref(i),
+            EExpr::Dynamic(d) => d.calc_ref(i),
         }
     }
     fn diff_dyn(&self, d: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {

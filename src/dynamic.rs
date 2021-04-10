@@ -45,8 +45,8 @@ where
     Out: Any,
     In: ?Sized + Any,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.0.calc_dyn(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.0.calc_ref(value)
     }
     fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {
         self.0.diff_dyn(dim)
@@ -281,48 +281,48 @@ mod tests {
     #[test]
     fn variable() {
         let x: Expr<Variable, isize> = Variable.into();
-        assert_eq!(1, x.calc_dyn(&1));
+        assert_eq!(1, x.calc_ref(&1));
         let y = x + x;
-        assert_eq!(2, y.calc_dyn(&1));
+        assert_eq!(2, y.calc_ref(&1));
         let z = y.diff_dyn(0);
-        assert_eq!(2, z.calc_dyn(&2));
+        assert_eq!(2, z.calc_ref(&2));
 
         let x: Expr<Variable, f32> = Variable.into();
         let w = Arc::new(x);
-        assert_eq!(1., x.calc_dyn(&1.));
+        assert_eq!(1., x.calc_ref(&1.));
         let w = (w as Arc<dyn DynamicSymbol<f32, f32>>).to_expr();
-        assert_eq!(1., x.calc_dyn(&1.));
+        assert_eq!(1., x.calc_ref(&1.));
         let y = w.clone() + w.clone();
-        assert_eq!(2., y.calc_dyn(&1.));
+        assert_eq!(2., y.calc_ref(&1.));
         let y = w.clone() + x;
-        assert_eq!(2., y.calc_dyn(&1.));
+        assert_eq!(2., y.calc_ref(&1.));
         let y = x + w.clone();
-        assert_eq!(2., y.calc_dyn(&1.));
+        assert_eq!(2., y.calc_ref(&1.));
         let z = y.diff_dyn(0);
-        assert_eq!(2., z.calc_dyn(&1.));
+        assert_eq!(2., z.calc_ref(&1.));
 
         let wexp = w.exp();
-        assert_eq!(1_f32.exp(), wexp.calc_dyn(&1.));
-        assert_eq!(1_f32.exp(), wexp.diff(0).calc_dyn(&1.));
+        assert_eq!(1_f32.exp(), wexp.calc_ref(&1.));
+        assert_eq!(1_f32.exp(), wexp.diff(0).calc_ref(&1.));
     }
 
     #[test]
     fn monomial() {
         let x = DimMonomial::<U0, f32, u8>::new(2., 3).to_expr();
         let v = [2.0];
-        assert_eq!(16., x.calc_dyn(&v));
+        assert_eq!(16., x.calc_ref(&v));
         let y = x + x;
-        assert_eq!(32., y.calc_dyn(&v));
+        assert_eq!(32., y.calc_ref(&v));
         let z = y.diff_dyn(0);
-        assert_eq!(48., z.calc_dyn(&v));
+        assert_eq!(48., z.calc_ref(&v));
 
         let a = z.to_expr() + x;
-        assert_eq!(64., a.calc_dyn(&v));
+        assert_eq!(64., a.calc_ref(&v));
 
         let x1 = x.diff_dyn(0);
         let y1 = x + x1;
-        assert_eq!(40., y1.calc_dyn(&v));
-        assert_eq!(48., y1.diff(0).calc_dyn(&v));
+        assert_eq!(40., y1.calc_ref(&v));
+        assert_eq!(48., y1.diff(0).calc_ref(&v));
     }
 
     #[test]

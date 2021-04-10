@@ -62,7 +62,7 @@ where
     In: ?Sized,
 {
     #[inline]
-    fn calc_dyn(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         Out::zero()
     }
     #[inline]
@@ -102,7 +102,7 @@ where
     Out: One + Zero,
     In: ?Sized,
 {
-    fn calc_dyn(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         Out::one()
     }
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -140,7 +140,7 @@ where
     Out: Any + Zero + Clone + Display,
     In: ?Sized,
 {
-    fn calc_dyn(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         self.0.clone()
     }
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -206,7 +206,7 @@ where
     Out: Zero + One,
     In: ToOwned<Owned = Out> + ?Sized,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
+    fn calc_ref(&self, value: &In) -> Out {
         value.to_owned()
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
