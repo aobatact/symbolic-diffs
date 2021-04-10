@@ -21,6 +21,9 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
     }
 }
 
+unsafe impl<Out : Send + Sync, In: ?Sized + Send + Sync> Send for DynExpr<Out, In>{}
+unsafe impl<Out : Send + Sync, In: ?Sized + Send + Sync> Sync for DynExpr<Out, In>{}
+
 impl<Out, In: ?Sized> From<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In> {
     fn from(sym: Arc<dyn DynamicSymbol<Out, In>>) -> Self {
         DynExpr(sym)
