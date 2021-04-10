@@ -146,13 +146,35 @@ macro_rules! FloatOps {
         {
             type Derivative = impl Symbol<Out, In>;
             fn calc_ref(&self, v: &In) -> Out {
-                let inner = self.sym.calc_ref(v);
+                let inner = self.sym.calc_dyn(v);
                 inner.$me()
             }
             fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
                 let df = self.sym.clone().diff(dm).to_expr();
                 let y = $ex(self);
                 df * y
+            }
+        }
+
+        impl<Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<$op, Sym, Out, In>
+        where
+            Sym: Symbol<Out, In>,
+            Out: ExNumOps
+                + Add<Output = Out>
+                + Sub<Output = Out>
+                + Mul<Output = Out>
+                + Div<Output = Out>,
+            In: ?Sized + Any,
+        {
+            fn calc_dyn(&self, v: &In) -> Out {
+                let inner = self.sym.calc_dyn(v);
+                inner.$me()
+            }
+            fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+                Arc::new(self.clone().diff(dm))
+            }
+            fn as_any(&self) -> &(dyn Any) {
+                self
             }
         }
     };
@@ -203,7 +225,7 @@ where
     In: ?Sized + Any,
 {
     fn calc_dyn(&self, value: &In) -> Out {
-        self.calc_ref(value)
+        self.sym1.calc_dyn(value).pow(self.sym2.calc_dyn(value))
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         let sym1 = self.sym1.clone();
@@ -227,7 +249,7 @@ where
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
+        self.calc_dyn(value)
     }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let sym1 = self.sym1.clone();

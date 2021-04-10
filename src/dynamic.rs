@@ -306,8 +306,7 @@ mod tests {
 
         let wexp = w.exp();
         assert_eq!(1_f32.exp(), wexp.calc_dyn(&1.));
-        assert_eq!(1_f32.exp(), wexp.calc_ref(&1.));
-        assert_eq!(1_f32.exp(), wexp.diff(0).calc_ref(&1.));
+        assert_eq!(1_f32.exp(), wexp.diff(0).calc_dyn(&1.));
     }
 
     #[test]
@@ -319,11 +318,9 @@ mod tests {
         assert_eq!(32., y.calc_dyn(&v));
         let z = y.diff_dyn(0);
         assert_eq!(48., z.calc_dyn(&v));
-        assert_eq!(48., z.calc_ref(&v));
 
         let a = z.to_expr() + x;
         assert_eq!(64., a.calc_dyn(&v));
-        assert_eq!(64., a.calc_ref(&v));
 
         let x1 = x.diff_dyn(0);
         let y1 = x + x1;

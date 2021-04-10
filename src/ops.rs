@@ -363,6 +363,23 @@ impl UnaryOp for NegOp {
 /// ```
 pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
 
+impl<Sym, Out, In> DynamicSymbol<Out, In> for NegSym<Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Neg<Output = Out> + Any,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        -self.sym.calc_dyn(value)
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(self.clone().diff(dm))
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym, Out, In> Symbol<Out, In> for NegSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
@@ -396,6 +413,24 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SquareOp;
 impl UnaryOp for SquareOp {}
+
+impl<Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        let x = self.sym.calc_dyn(value);
+        x.clone() * x
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        Arc::new(self.clone().diff(dm))
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
 
 impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
 where
@@ -442,6 +477,24 @@ where
 pub struct UnaryPowOp<Exp>(pub(crate) Exp);
 impl<Exp> UnaryOp for UnaryPowOp<Exp> {}
 
+impl<Sym, Out, In, Exp> DynamicSymbol<Out, In> for UnarySym<UnaryPowOp<Exp>, Sym, Out, In>
+where
+    Sym: Symbol<Out, In>,
+    Out: Add<Output = Out> + Mul<Output = Out> + Pow<Exp, Output = Out> + Clone + Any,
+    Exp: Sub<Output = Exp> + One + Clone + Default + Any,
+    In: ?Sized + Any,
+{
+    fn calc_dyn(&self, value: &In) -> Out {
+        self.sym.calc_dyn(value).pow(self.op.0.clone())
+    }
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>  {
+        Arc::new(self.clone().diff(dm))
+    }
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 impl<Sym, Out, In, Exp> Symbol<Out, In> for UnarySym<UnaryPowOp<Exp>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
@@ -451,7 +504,7 @@ where
 {
     type Derivative = impl Symbol<Out, In>;
     fn calc_ref(&self, value: &In) -> Out {
-        self.sym.calc_ref(value).pow(self.op.0.clone())
+        self.calc_dyn(value)
     }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         (Expr::from(self.sym.clone().diff(dm))

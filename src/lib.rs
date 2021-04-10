@@ -36,6 +36,7 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     type Derivative: Symbol<Out, In>;
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
+    #[deprecated]
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
@@ -51,7 +52,7 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     where
         In: Sized,
     {
-        self.calc_ref(&value)
+        self.calc_dyn(&value)
     }
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
     #[inline]
@@ -154,7 +155,7 @@ where
     type Derivative = Expr<Sym::Derivative, Out, In>;
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
-        self.0.calc_ref(value)
+        self.0.calc_dyn(value)
     }
     #[inline]
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -270,6 +271,7 @@ where
     }
 }
 
+/*
 impl<Op, Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp,
@@ -279,7 +281,7 @@ where
 {
     #[inline]
     fn calc_dyn(&self, value: &In) -> Out {
-        self.calc_ref(value)
+        self.calc_dyn(value)
     }
     #[inline]
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -289,7 +291,7 @@ where
     fn as_any(&self) -> &(dyn Any) {
         self
     }
-}
+}*/
 
 /// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
 pub trait BinaryOp {
