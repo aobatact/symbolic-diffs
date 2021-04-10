@@ -21,8 +21,8 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
     }
 }
 
-unsafe impl<Out : Send + Sync, In: ?Sized + Send + Sync> Send for DynExpr<Out, In>{}
-unsafe impl<Out : Send + Sync, In: ?Sized + Send + Sync> Sync for DynExpr<Out, In>{}
+unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Send for DynExpr<Out, In> {}
+unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Sync for DynExpr<Out, In> {}
 
 impl<Out, In: ?Sized> From<Arc<dyn DynamicSymbol<Out, In>>> for DynExpr<Out, In> {
     fn from(sym: Arc<dyn DynamicSymbol<Out, In>>) -> Self {
@@ -274,6 +274,7 @@ impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbo
 //pub type DynExprMV<T, Dim> = DynExpr<T, GenericArray<T, Dim>>;
 
 #[cfg(test)]
+#[cfg(feature = "typenum")]
 mod tests {
     use crate::dynamic::*;
     use generic_array::*;

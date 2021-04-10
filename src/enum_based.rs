@@ -1,8 +1,8 @@
 //! wip
 
-use crate::ops::AddSym;
+use crate::ops::{AddSym, DivSym, MulSym, NegSym, SubSym};
 use crate::*;
-use core::ops::Add;
+use core::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone)]
 pub enum EExpr<Out, In: ?Sized> {
@@ -116,6 +116,97 @@ where
             EExpr::Zero => true,
             EExpr::Const(Const(c)) if c.is_zero() => true,
             _ => false,
+        }
+    }
+}
+
+impl<Out, In: ?Sized> Sub for EExpr<Out, In>
+where
+    Self: Any + Clone,
+    Out: Zero + Clone + One + Sub<Output = Out> + Display + Neg<Output = Out>,
+{
+    type Output = EExpr<Out, In>;
+    fn sub(self, e: EExpr<Out, In>) -> EExpr<Out, In> {
+        match (self, e) {
+            (x, EExpr::Zero) => x,
+            (EExpr::Zero, x) => -x,
+            (EExpr::Const(Const(c)), EExpr::One) => EExpr::Const(Const(c - Out::one())),
+            (EExpr::One, EExpr::Const(Const(c))) => EExpr::Const(Const(Out::one() - c)),
+            (EExpr::Const(Const(c1)), EExpr::Const(Const(c2))) => EExpr::Const(Const(c1 - c2)),
+            (l, r) => EExpr::Dynamic(Arc::new(SubSym::new(l, r))),
+        }
+    }
+}
+
+impl<Out, In: ?Sized> Neg for EExpr<Out, In>
+where
+    Self: Any + Clone,
+    Out: Zero + Clone + One + Neg<Output = Out> + Display,
+{
+    type Output = EExpr<Out, In>;
+    fn neg(self) -> EExpr<Out, In> {
+        match self {
+            EExpr::Zero => EExpr::Zero,
+            EExpr::One => EExpr::Const(Const(-Out::one())),
+            EExpr::Const(Const(c)) => EExpr::Const(Const(-c)),
+            x => EExpr::Dynamic(Arc::new(NegSym::new(x))),
+        }
+    }
+}
+
+impl<Out, In: ?Sized> Mul for EExpr<Out, In>
+where
+    Self: Any + Clone,
+    Out: Zero + Clone + One + Add<Output = Out> + Display + Mul<Output = Out>,
+{
+    type Output = EExpr<Out, In>;
+    fn mul(self, e: EExpr<Out, In>) -> EExpr<Out, In> {
+        match (self, e) {
+            (EExpr::Zero, _) | (_, EExpr::Zero) => EExpr::Zero,
+            (EExpr::One, x) | (x, EExpr::One) => x,
+            (EExpr::Const(Const(c1)), EExpr::Const(Const(c2))) => EExpr::Const(Const(c1 * c2)),
+            (l, r) => EExpr::Dynamic(Arc::new(MulSym::new(l, r))),
+        }
+    }
+}
+
+impl<Out, In: ?Sized> One for EExpr<Out, In>
+where
+    Self: Any + Clone,
+    Out: Zero + Clone + One + Add<Output = Out> + Display + Mul<Output = Out>,
+{
+    fn one() -> Self {
+        EExpr::One
+    }
+    fn is_one(&self) -> bool {
+        match self {
+            EExpr::One => true,
+            _ => false,
+        }
+    }
+}
+
+impl<Out, In: ?Sized> Div for EExpr<Out, In>
+where
+    Self: Any + Clone,
+    Out: Zero
+        + Clone
+        + One
+        + Sub<Output = Out>
+        + Display
+        + Neg<Output = Out>
+        + Add<Output = Out>
+        + Mul<Output = Out>
+        + Div<Output = Out>,
+{
+    type Output = EExpr<Out, In>;
+    fn div(self, e: EExpr<Out, In>) -> EExpr<Out, In> {
+        match (self, e) {
+            (EExpr::Zero, _) => EExpr::Zero,
+            (x, EExpr::One) => x,
+            (EExpr::One, EExpr::Const(Const(c))) => EExpr::Const(Const(Out::one() / c)),
+            (EExpr::Const(Const(c1)), EExpr::Const(Const(c2))) => EExpr::Const(Const(c1 / c2)),
+            (l, r) => EExpr::Dynamic(Arc::new(DivSym::new(l, r))),
         }
     }
 }

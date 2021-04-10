@@ -15,7 +15,7 @@ mod d_variable;
 /// # use typenum;
 /// let dim1 = symbolic_diffs::Dim::<0>;
 /// let dim2 = typenum::U1::new();
-/// let dim3 = DimWrap(2);
+/// let dim3 = symbolic_diffs::DimWrap(2);
 /// ```
 pub trait DimMarker: Copy {
     fn dim(self) -> usize;
@@ -268,6 +268,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "typenum")]
 mod test {
 
     #[test]

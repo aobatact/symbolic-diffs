@@ -217,6 +217,18 @@ where
     Op: UnaryOp,
     Sym: Symbol<Out, In>,
 {
+    fn new(sym: Sym) -> Self
+    where
+        Op: Default,
+    {
+        UnarySym {
+            op: Op::default(),
+            sym: sym,
+            po: PhantomData,
+            pi: PhantomData,
+        }
+    }
+
     fn new_with_op(op: Op, sym: Sym) -> Self {
         UnarySym {
             op: op,
