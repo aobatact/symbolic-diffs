@@ -92,13 +92,13 @@ where
 
 impl<Out, In> Sub<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Any + Sub<Output = Out> + Zero,
+    Out: Any + Sub<Output = Out> + Zero + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn sub(self, other: DynExpr<Out, In>) -> DynExpr<Out, In> {
         if self.is_zero() {
-            other
+            -other
         } else if other.is_zero() {
             self
         } else {

@@ -15,6 +15,7 @@ mod d_variable;
 /// # use typenum;
 /// let dim1 = symbolic_diffs::Dim::<0>;
 /// let dim2 = typenum::U1::new();
+/// let dim3 = DimWrap(2);
 /// ```
 pub trait DimMarker: Copy {
     fn dim(self) -> usize;
@@ -37,6 +38,7 @@ impl<T: Unsigned> DimMarker for T {
     }
 }
 
+/// Dimention marker using value. This is not ZST.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DimWrap(pub usize);
 
