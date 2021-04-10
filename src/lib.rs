@@ -1,8 +1,6 @@
 use core::{any::Any, marker::PhantomData};
-use num_traits::Zero;
 use std::sync::Arc;
 
-mod dynamic;
 pub mod ops;
 pub mod variables;
 
@@ -171,5 +169,19 @@ where
 {
     fn clone(&self) -> Self {
         Self::new_with_op(self.op.clone(), self.sym1.clone(), self.sym2.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ops::*;
+    use crate::*;
+    use std::sync::Arc;
+    #[test]
+    fn variable() {
+        let x: Expr<Variable, isize> = Variable.into();
+        let y: Expr<Variable, isize> = Variable.into();
+
+        //let n = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
     }
 }
