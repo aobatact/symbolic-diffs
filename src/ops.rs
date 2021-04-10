@@ -411,7 +411,7 @@ where
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let one = Out::one();
         let two = one.clone() + one;
-        Expr::from(Const::from(two)) * self.sym.clone().diff(dm) * self.sym
+        (Expr::from(Const::from(two)) * self.sym.clone().diff(dm) * self.sym).inner()
     }
 }
 
@@ -454,8 +454,8 @@ where
         self.sym.calc_ref(value).pow(self.op.0.clone())
     }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
-        Expr::from(self.sym.clone().diff(dm))
-            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - Exp::one()), self.sym)
+        (Expr::from(self.sym.clone().diff(dm))
+            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - Exp::one()), self.sym)).inner()
     }
 }
 
