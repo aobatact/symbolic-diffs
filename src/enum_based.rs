@@ -9,9 +9,11 @@ pub enum EExpr<Out, In: ?Sized> {
     Zero,
     One,
     Const(Const<Out>),
-    //Variable(DimVariable<DimWrap>),
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
+
+unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Send for EExpr<Out, In> {}
+unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Sync for EExpr<Out, In> {}
 
 impl<Out: PartialEq<Out>, In: ?Sized> PartialEq for EExpr<Out, In> {
     fn eq(&self, e: &EExpr<Out, In>) -> bool {
@@ -210,3 +212,28 @@ where
         }
     }
 }
+
+/*
+impl<Out, In: ?Sized> Pow<EExpr<Out, In>> for EExpr<Out, In>
+where
+    Self: Any + Clone,
+    Out: Zero
+        + Clone
+        + One
+        + Sub<Output = Out>
+        + Display
+        + Neg<Output = Out>
+        + Add<Output = Out>
+        + Mul<Output = Out>
+        + Div<Output = Out>
+        + Pow<Out, Output = Out>,
+{
+    type Output = EExpr<Out, In>;
+    fn pow(self, r : EExpr<Out, In>) -> EExpr<Out, In> {
+        match (self, r) {
+            (_, EExpr::Zero) => EExpr::One,
+            (EExpr::Zero, _) => EExpr::Zero,
+        }
+    }
+}
+*/

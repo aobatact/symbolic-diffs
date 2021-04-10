@@ -1,4 +1,4 @@
-#![feature(min_type_alias_impl_trait, min_specialization)]
+#![feature(min_type_alias_impl_trait)]
 
 use core::{any::Any, fmt::Display, marker::PhantomData};
 use num_traits::{One, Pow, Zero};
@@ -272,21 +272,21 @@ where
 
 impl<Op, Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<Op, Sym, Out, In>
 where
-    Op: UnaryOp + Default,
+    Op: UnaryOp,
     Sym: Symbol<Out, In>,
     In: ?Sized,
     Self: Symbol<Out, In>,
 {
     #[inline]
-    default fn calc_dyn(&self, value: &In) -> Out {
+    fn calc_dyn(&self, value: &In) -> Out {
         self.calc_ref(value)
     }
     #[inline]
-    default fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         Arc::new(self.clone().diff(dm))
     }
 
-    default fn as_any(&self) -> &(dyn Any) {
+    fn as_any(&self) -> &(dyn Any) {
         self
     }
 }

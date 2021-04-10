@@ -357,6 +357,7 @@ mod tests {
         let _sub = DynExpr(Arc::new(AddSym::new(x.clone(), y.clone())));
         let _mul = DynExpr(Arc::new(MulSym::new(x.clone(), y.clone())));
         //compile freeze for div
+        let _div = Arc::new(DivSym::new(x.clone(), y.clone()));
         //let _div = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
     }
 }

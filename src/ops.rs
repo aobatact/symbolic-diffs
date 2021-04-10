@@ -438,24 +438,15 @@ where
 /// let x4 = x.pow_t(4_u8);
 /// assert_eq!(16,x4.calc(2));
 /// ```
-/// Since i32 doesn't impliment [`Pow`](`num_traits::pow::Pow`)`<i32>`, should use i8 as power.
-/// ```compile_fail
-/// # use symbolic_diffs::*;
-/// # use typenum::*;
-/// # use generic_array::*;
-/// let x = Variable.to_expr();
-/// let x4 = x.pow_t(4);
-/// assert_eq!(16,x4.calc(2));
-/// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
-pub struct UnaryPowOp<T>(pub(crate) T);
-impl<T> UnaryOp for UnaryPowOp<T> {}
+pub struct UnaryPowOp<Exp>(pub(crate) Exp);
+impl<Exp> UnaryOp for UnaryPowOp<Exp> {}
 
-impl<Sym, Out, In, T> Symbol<Out, In> for UnarySym<UnaryPowOp<T>, Sym, Out, In>
+impl<Sym, Out, In, Exp> Symbol<Out, In> for UnarySym<UnaryPowOp<Exp>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Pow<T, Output = Out> + Clone + Any,
-    T: Sub<Output = T> + One + Clone + Default + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Pow<Exp, Output = Out> + Clone + Any,
+    Exp: Sub<Output = Exp> + One + Clone + Default + Any,
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
@@ -464,7 +455,7 @@ where
     }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         Expr::from(self.sym.clone().diff(dm))
-            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - T::one()), self.sym)
+            * UnarySym::new_with_op(UnaryPowOp(self.op.0 - Exp::one()), self.sym)
     }
 }
 
@@ -490,10 +481,10 @@ where
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any,
     In: ?Sized + Any,
 {
-    pub fn pow_t<T>(self, r: T) -> Expr<UnarySym<UnaryPowOp<T>, Sym, Out, In>, Out, In>
+    pub fn pow_t<Exp>(self, r: Exp) -> Expr<UnarySym<UnaryPowOp<Exp>, Sym, Out, In>, Out, In>
     where
-        Out: Pow<T, Output = Out>,
-        T: Sub<Output = T> + One + Clone + Any + Default,
+        Out: Pow<Exp, Output = Out>,
+        Exp: Sub<Output = Exp> + One + Clone + Any + Default,
     {
         UnarySym::new_with_op(UnaryPowOp(r), self.inner()).into()
     }
