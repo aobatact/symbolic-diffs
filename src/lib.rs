@@ -37,11 +37,8 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
     fn diff(self, dm: usize) -> Self::Derivative;
-}
 
-///Extention for [`Symbol`](`crate::Symbol`).
-pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
-    /// Shortcut for calculating owned value from [`calc_ref`](`crate::Symbol::calc_ref`).
+    /// Shortcut for calculating owned value from [`calc_ref`](`crate::DynamicSymbol::calc_ref`).
     #[inline]
     fn calc(&self, value: In) -> Out
     where
@@ -49,12 +46,16 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     {
         self.calc_ref(&value)
     }
+}
+
+///Extention for [`Symbol`](`crate::Symbol`).
+pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
-    #[inline]
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
     }
 
+    ///Wrap this symbol to [`DynExpr`]
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
         DynExpr(Arc::new(self))
     }

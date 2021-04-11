@@ -73,6 +73,12 @@ impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
     }
 }
 
+impl<Out: PartialEq, In: ?Sized> PartialEq<DynExpr<Out, In>> for DynExpr<Out, In> {
+    fn eq(&self, r: &DynExpr<Out, In>) -> bool {
+        Arc::ptr_eq(&self.0, &r.0)
+    }
+}
+
 impl<Out, In> Add<DynExpr<Out, In>> for DynExpr<Out, In>
 where
     Out: Any + Add<Output = Out> + Zero,
@@ -249,26 +255,6 @@ where
         UnarySym::new_with_op(UnaryPowOp(r), self.0).to_dyn_expr()
     }
 }
-
-/*
-//needs specialization
-impl<Out, In> Add<Arc<dyn DynamicSymbol<Out, In>>> for Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>
-    where Out : Clone + Any + Add<Out, Output = Out>,In : ?Sized  + Any,
-{
-    type Output = Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In>;
-    fn add(self, other : Arc<dyn DynamicSymbol<Out, In>>) -> Expr<Arc<dyn DynamicSymbol<Out, In>>, Out, In> {
-        let l = self.inner_any();
-        if l.downcast_ref::<ZeroSym>().is_some() {
-            other.to_expr()
-        } else if other.as_ref().as_any().downcast_ref::<ZeroSym>().is_some() {
-            self
-        } else {
-            Expr::new(Arc::new(AddSym::new(self.0,other)))
-        }
-    }
-}
-*/
-//pub type DynExprMV<T, Dim> = DynExpr<T, GenericArray<T, Dim>>;
 
 #[cfg(test)]
 #[cfg(feature = "typenum")]
