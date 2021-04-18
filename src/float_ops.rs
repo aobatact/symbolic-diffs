@@ -191,13 +191,13 @@ FlaotSymbols!(
     (Tanh,  tanh,   TanhOp,  (|x : Self| SquareSym::new(x.sym.cosh()).recip() ));
     (Asin,  asin,   AsinOp,  (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
     (Acos,  acos,   AcosOp,  (|x : Self| NegSym::new(SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip()) ));
-    (Atan,  atan,   AtanOp,  (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).recip() ));
-    (Asinh, asinh,  AsinhOp, (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
+    (Atan,  atan,   AtanOp,  (|x : Self| AddSym::new(Const::one(),SquareSym::new(x.sym) ).recip() ));
+    (Asinh, asinh,  AsinhOp, (|x : Self| AddSym::new(Const::one(),SquareSym::new(x.sym) ).sqrt().recip() ));
     (Acosh, acosh,  AcoshOp, (|x : Self| SubSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
     (Atanh, atanh,  AtanhOp, (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
-    (Ln1p,  ln_1p,  Ln1pOp,  (|x : Self| AddSym::new(x.sym, Const::one()).recip() ));
-    (Log2,  log2,   Log2Op,  (|x : Self| MulSym::new(x.sym, Const(Out::ln_2()) ).recip() ));
-    (Log10, log10,  Log10Op, (|x : Self| MulSym::new(x.sym, Const(Out::ln_10()) ).recip() ));
+    (Ln1p,  ln_1p,  Ln1pOp,  (|x : Self| AddSym::new(Const::one(), x.sym).recip() ));
+    (Log2,  log2,   Log2Op,  (|x : Self| MulSym::new(Const(Out::ln_2()), x.sym ).recip() ));
+    (Log10, log10,  Log10Op, (|x : Self| MulSym::new(Const(Out::ln_10()),x.sym  ).recip() ));
     (ExpM1, exp_m1, ExpM1Op, (|x : Self| x ));
     (Exp2,  exp2,   Exp2Op,  (|x : Self| MulSym::new(Const(Out::ln_2()), x) ));
 );

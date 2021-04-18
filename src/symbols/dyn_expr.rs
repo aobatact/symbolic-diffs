@@ -25,7 +25,6 @@ impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
 
 unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Send for DynExpr<Out, In> {}
 unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Sync for DynExpr<Out, In> {}
-
 impl<Out: PartialEq<Out>, In: ?Sized> PartialEq for DynExpr<Out, In> {
     fn eq(&self, e: &DynExpr<Out, In>) -> bool {
         match (self, e) {
@@ -46,6 +45,12 @@ impl<Out: Display, In: ?Sized> Display for DynExpr<Out, In> {
             DynExpr::Const(c) => c.fmt(fmt),
             DynExpr::Dynamic(d) => d.fmt(fmt),
         }
+    }
+}
+
+impl<Out, In: ?Sized> Default for DynExpr<Out, In> {
+    fn default() -> Self {
+        DynExpr::Zero
     }
 }
 
@@ -221,10 +226,7 @@ where
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 / c2))
             }
-            (l, r) => {
-                //todo!();
-                DivSym::new(l, r).to_dyn_expr()
-            }
+            (l, r) => DivSym::new(l, r).to_dyn_expr(),
         }
     }
 }
@@ -262,12 +264,32 @@ where
 
 impl<Out, In> Pow<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: ExNumOps + Any + Clone + Pow<Out, Output = Out>,
+    Out: ExNumOps
+        + Add<Output = Out>
+        + Mul<Output = Out>
+        + Pow<Out, Output = Out>
+        + Clone
+        + Any
+        + Zero
+        + One
+        + Default,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn pow(self, r: DynExpr<Out, In>) -> DynExpr<Out, In> {
-        BinarySym::new_with_op(PowOp, self, r).to_dyn_expr()
+        match (self, r) {
+            (_, DynExpr::Zero) => DynExpr::One,
+            (DynExpr::Zero, _) => DynExpr::Zero,
+            (DynExpr::One, _) => DynExpr::One,
+            (x, DynExpr::One) => x,
+            (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
+                DynExpr::Const(Const(c1.pow(c2)))
+            }
+            (x, DynExpr::Const(Const(c2))) => {
+                UnarySym::new_with_op(UnaryPowOp(c2), x).to_dyn_expr()
+            }
+            (l, r) => BinarySym::new_with_op(PowOp, l, r).to_dyn_expr(),
+        }
     }
 }
 

@@ -71,6 +71,10 @@ where
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         self.0.diff(dm).into()
     }
+
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        self.0.to_dyn_expr()
+    }
 }
 
 impl<Sym, Out: Clone, In> DynamicSymbol<Out, In> for Expr<Sym, Out, In>
