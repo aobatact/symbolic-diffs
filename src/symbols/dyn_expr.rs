@@ -3,7 +3,6 @@
 use crate::float_ops::*;
 use crate::ops::*;
 use crate::symbols::*;
-use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 
 pub enum DynExpr<Out, In: ?Sized> {
@@ -33,7 +32,8 @@ impl<Out: PartialEq<Out>, In: ?Sized> PartialEq for DynExpr<Out, In> {
             (DynExpr::Zero, DynExpr::Zero) => true,
             (DynExpr::One, DynExpr::One) => true,
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => c1 == c2,
-            (_, _) => false,
+            (DynExpr::Dynamic(d1), DynExpr::Dynamic(d2)) => Arc::ptr_eq(d1, d2),
+            _ => false,
         }
     }
 }

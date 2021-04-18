@@ -265,7 +265,7 @@ where
 {
     type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
     fn pow(self, r: R) -> Self::Output {
-        BinarySym::new(self.0, r).into()
+        BinarySym::new(self.inner(), r).into()
     }
 }
 

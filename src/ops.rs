@@ -342,7 +342,7 @@ macro_rules! op_expr {
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {
-                BinarySym::new(self.0, r).into()
+                BinarySym::new(self.inner(), r).into()
             }
         }
     };
@@ -427,7 +427,7 @@ where
 {
     type Output = Expr<NegSym<S, O, I>, O, I>;
     fn neg(self) -> Self::Output {
-        NegSym::from(self.0).into()
+        NegSym::from(self.inner()).into()
     }
 }
 
