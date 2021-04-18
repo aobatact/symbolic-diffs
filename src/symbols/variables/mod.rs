@@ -1,3 +1,5 @@
+//! Set of variables, symbols in the leaf node.
+
 use crate::*;
 use core::{any::Any, borrow::Borrow, fmt::Display, ops::Mul};
 pub use d_monomial::*;

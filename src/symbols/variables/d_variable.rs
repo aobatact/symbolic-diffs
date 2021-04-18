@@ -121,6 +121,7 @@ where
     }
 
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T; D]>> {
+        debug_assert!(dm < D, "larger dimention {} for {}", dm, D);
         if dm == self.0.dim() {
             Arc::new(OneSym)
         } else {
@@ -192,6 +193,7 @@ where
     type Derivative = Const<T>;
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
+        debug_assert!(dm < D, "larger dimention {} for {}", dm, D);
         if dm == self.0.dim() {
             Const(T::one())
         } else {
