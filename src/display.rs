@@ -1,3 +1,4 @@
+use crate::symbols::*;
 use crate::*;
 use core::fmt::Display;
 
@@ -44,14 +45,16 @@ impl<Dim: DimMarker, Coefficient: Display + From<Degree>, Degree: Clone> Display
     }
 }
 
-impl<Op: UnaryOp, Sym: Symbol<Out, In>, Out, In: ?Sized> Display for UnarySym<Op, Sym, Out, In> {
+impl<Op: UnaryOp, Sym: DynamicSymbol<Out, In>, Out, In: ?Sized> Display
+    for UnarySym<Op, Sym, Out, In>
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         Op::format_expression(f, |f| self.sym.fmt(f))
     }
 }
 
-impl<Op: BinaryOp, Sym1: Symbol<Out, In>, Sym2: Symbol<Out, In>, Out, In: ?Sized> Display
-    for BinarySym<Op, Sym1, Sym2, Out, In>
+impl<Op: BinaryOp, Sym1: DynamicSymbol<Out, In>, Sym2: DynamicSymbol<Out, In>, Out, In: ?Sized>
+    Display for BinarySym<Op, Sym1, Sym2, Out, In>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
         Op::format_expression(f, |f| self.sym1.fmt(f), |f| self.sym2.fmt(f))

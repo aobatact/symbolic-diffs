@@ -1,8 +1,9 @@
+use crate::symbols::*;
 use crate::*;
 use core::{
     any::Any,
     fmt::Display,
-    ops::{Mul, Sub},
+    ops::{Add, Mul, Sub},
 };
 use num_traits::{One, Pow, Zero};
 use std::sync::Arc;
@@ -40,7 +41,7 @@ use typenum::{
 pub struct DimMonomial<Dim: DimMarker, Coefficient, Degree>(
     pub(crate) Coefficient,
     pub(crate) Degree,
-    Dim,
+    pub(crate) Dim,
 );
 impl<Dim, Coefficient, Degree> DimMonomial<Dim, Coefficient, Degree>
 where
@@ -87,7 +88,7 @@ where
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
-    fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         if !self.0.is_zero() {
             /*if self.1.is_one() {
@@ -137,11 +138,6 @@ where
     True: Same<<Dim as IsLess<N>>::Output>,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    #[inline]
-    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        self.calc_dyn(v)
-    }
     /// Differentiate if `dm == dim`, else return zeroed DimMonomial.
     ///
     /// There are some limitation for using [`diff`](`crate::Symbol::diff`) directory, so you can't call like bellow.
@@ -191,7 +187,7 @@ where
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
-    fn calc_dyn(&self, v: &[T]) -> T {
+    fn calc_ref(&self, v: &[T]) -> T {
         if !self.0.is_zero() {
             /*if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()
@@ -237,11 +233,6 @@ where
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    #[inline]
-    fn calc_ref(&self, v: &[T]) -> T {
-        self.calc_dyn(v)
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         if dm == self.dim() && !self.1.is_zero() {
@@ -269,7 +260,7 @@ where
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
-    fn calc_dyn(&self, v: &[T; D]) -> T {
+    fn calc_ref(&self, v: &[T; D]) -> T {
         if !self.0.is_zero() {
             /*if self.1.is_one() {
                 self.0.clone() * v[Dim::USIZE].clone()
@@ -316,11 +307,6 @@ where
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
     type Derivative = DimMonomial<Dim, T, Degree>;
-    /// Picks the value in the Dim-th dimmension and calculate as `coefficient * (v_dim ^ degree)`
-    #[inline]
-    fn calc_ref(&self, v: &[T; D]) -> T {
-        self.calc_dyn(v)
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
         debug_assert!(dm < D);
@@ -333,5 +319,65 @@ where
         } else {
             DimMonomial(T::zero(), Degree::one(), self.2)
         }
+    }
+}
+
+//T = Coefficient
+impl<Dim, T, Degree, const N: usize> From<DimMonomial<Dim, T, Degree>>
+    for crate::ops::MulSym<
+        UnarySym<crate::ops::UnaryPowOp<Degree>, DimVariable<Dim>, T, [T; N]>,
+        Const<T>,
+        T,
+        [T; N],
+    >
+where
+    T: Add<Output = T>
+        + Sub<Output = T>
+        + Mul<Output = T>
+        + num_traits::Pow<Degree, Output = T>
+        + Clone
+        + Zero
+        + Display
+        + Any,
+    Dim: DimMarker + Any,
+    DimVariable<Dim>: Symbol<T, [T; N]>,
+    Degree: Sub<Output = Degree> + One + Clone + Default + Any,
+{
+    fn from(dm: DimMonomial<Dim, T, Degree>) -> Self {
+        let dv = DimVariable::with_dimension(dm.2);
+        crate::ops::MulSym::new(
+            UnarySym::new_with_op(crate::ops::UnaryPowOp(dm.1), dv),
+            Const(dm.0),
+        )
+    }
+}
+
+//T = Coefficient
+impl<Dim, T, Degree> From<DimMonomial<Dim, T, Degree>>
+    for crate::ops::MulSym<
+        UnarySym<crate::ops::UnaryPowOp<Degree>, DimVariable<Dim>, T, [T]>,
+        Const<T>,
+        T,
+        [T],
+    >
+where
+    T: Add<Output = T>
+        + Sub<Output = T>
+        + Mul<Output = T>
+        + Pow<Degree, Output = T>
+        + Clone
+        + Zero
+        + Display
+        + Any,
+    Dim: DimMarker + Any,
+    DimVariable<Dim>: Symbol<T, [T]>,
+    Degree: Sub<Output = Degree> + One + Clone + Default + Any,
+{
+    fn from(dm: DimMonomial<Dim, T, Degree>) -> Self {
+        let dv = DimVariable::with_dimension(dm.2);
+        crate::ops::MulSym::new(
+            UnarySym::new_with_op(crate::ops::UnaryPowOp(dm.1), dv),
+            Const(dm.0),
+        )
     }
 }

@@ -1,3 +1,5 @@
+//! Set of variables, symbols in the leaf node.
+
 use crate::*;
 use core::{any::Any, borrow::Borrow, fmt::Display, ops::Mul};
 pub use d_monomial::*;
@@ -15,6 +17,7 @@ mod d_variable;
 /// # use typenum;
 /// let dim1 = symbolic_diffs::Dim::<0>;
 /// let dim2 = typenum::U1::new();
+/// let dim3 = symbolic_diffs::DimWrap(2);
 /// ```
 pub trait DimMarker: Copy {
     fn dim(self) -> usize;
@@ -37,6 +40,16 @@ impl<T: Unsigned> DimMarker for T {
     }
 }
 
+/// Dimention marker using value. This is not ZST.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct DimWrap(pub usize);
+
+impl DimMarker for DimWrap {
+    fn dim(self) -> usize {
+        self.0
+    }
+}
+
 /// [`Symbol`](`crate::Symbol`) represent Zero.
 /// ```
 /// # use symbolic_diffs::*;
@@ -51,7 +64,7 @@ where
     In: ?Sized,
 {
     #[inline]
-    fn calc_dyn(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         Out::zero()
     }
     #[inline]
@@ -70,11 +83,6 @@ where
     In: ?Sized,
 {
     type Derivative = ZeroSym;
-    ///Returns zero.
-    #[inline]
-    fn calc_ref(&self, _value: &In) -> Out {
-        Out::zero()
-    }
 
     ///Returns Zero Symbol.
     #[inline]
@@ -96,7 +104,7 @@ where
     Out: One + Zero,
     In: ?Sized,
 {
-    fn calc_dyn(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         Out::one()
     }
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -114,12 +122,6 @@ where
     In: ?Sized,
 {
     type Derivative = ZeroSym;
-    ///Returns zero.
-    #[inline]
-    fn calc_ref(&self, _value: &In) -> Out {
-        Out::one()
-    }
-
     ///Returns Zero Symbol.
     #[inline]
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -134,13 +136,13 @@ where
 /// assert_eq!(3,x.calc(6));
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Const<T>(pub(crate) T);
+pub struct Const<T>(pub T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where
     Out: Any + Zero + Clone + Display,
     In: ?Sized,
 {
-    fn calc_dyn(&self, _value: &In) -> Out {
+    fn calc_ref(&self, _value: &In) -> Out {
         self.0.clone()
     }
     fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
@@ -158,10 +160,6 @@ where
     In: ?Sized,
 {
     type Derivative = ZeroSym;
-    /// returns self.
-    fn calc_ref(&self, _value: &In) -> Out {
-        self.0.clone()
-    }
     /// returns [`ZeroSym`](`crate::ZeroSym`)
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
@@ -210,10 +208,11 @@ where
     Out: Zero + One,
     In: ToOwned<Owned = Out> + ?Sized,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
+    fn calc_ref(&self, value: &In) -> Out {
         value.to_owned()
     }
-    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+        debug_assert!(dm == 0, "Should use DimVariable instead for non zero dim.");
         Arc::new(OneSym)
     }
 
@@ -228,10 +227,6 @@ where
     In: ToOwned<Owned = Out> + ?Sized,
 {
     type Derivative = OneSym;
-    /// Returns cloned `value`
-    fn calc_ref(&self, value: &In) -> Out {
-        value.to_owned()
-    }
     /// Returns [`ZeroSym`](`crate::ZeroSym`)
     ///
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you cann't call like bellow.
@@ -256,6 +251,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "typenum")]
 mod test {
 
     #[test]

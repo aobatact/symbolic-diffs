@@ -58,6 +58,12 @@ where
     }
 }
 
+impl<Dim: DimMarker + Default> From<Variable> for DimVariable<Dim> {
+    fn from(_: Variable) -> Self {
+        DimVariable::new()
+    }
+}
+
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, N> DynamicSymbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
@@ -66,7 +72,7 @@ where
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
-    fn calc_dyn(&self, v: &GenericArray<T, N>) -> T {
+    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         v[Dim::USIZE].clone()
     }
@@ -88,7 +94,7 @@ where
     T: Clone + Zero + One,
     Dim: DimMarker + Any,
 {
-    fn calc_dyn(&self, v: &[T]) -> T {
+    fn calc_ref(&self, v: &[T]) -> T {
         v[self.0.dim()].clone()
     }
 
@@ -110,11 +116,12 @@ where
     T: Clone + Zero + One,
     Dim: DimMarker + Any,
 {
-    fn calc_dyn(&self, v: &[T; D]) -> T {
+    fn calc_ref(&self, v: &[T; D]) -> T {
         v[self.0.dim()].clone()
     }
 
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T; D]>> {
+        debug_assert!(dm < D, "larger dimention {} for {}", dm, D);
         if dm == self.0.dim() {
             Arc::new(OneSym)
         } else {
@@ -136,11 +143,6 @@ where
     True: Same<<Dim as IsLess<N>>::Output>,
 {
     type Derivative = Const<T>;
-    fn calc_ref(&self, v: &GenericArray<T, N>) -> T {
-        debug_assert!(<Le<Dim, N> as Bit>::BOOL);
-        v[Dim::USIZE].clone()
-    }
-
     /// Returns [`ZeroSym`](`crate::ZeroSym`).
     ///
     /// There are some limitation for [`diff`](`crate::Symbol::diff`), so you can't call like bellow.
@@ -173,9 +175,6 @@ where
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
-    fn calc_ref(&self, v: &[T]) -> T {
-        v[self.dim()].clone()
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T]>>::Derivative {
         if dm == self.0.dim() {
@@ -192,11 +191,9 @@ where
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
-    fn calc_ref(&self, v: &[T; D]) -> T {
-        v[self.dim()].clone()
-    }
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
+        debug_assert!(dm < D, "larger dimention {} for {}", dm, D);
         if dm == self.0.dim() {
             Const(T::one())
         } else {

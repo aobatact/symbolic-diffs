@@ -1,6 +1,8 @@
 //! Module for operating float-like type.
 //! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type impliments [`ExNumOps`]
 //!
+use crate::ops::{AddSym, MulSym, NegSym, SquareSym, SubSym};
+use crate::symbols::*;
 use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 #[cfg(feature = "num-complex")]
@@ -145,41 +147,59 @@ macro_rules! FloatOps {
             In: ?Sized + Any,
         {
             type Derivative = impl Symbol<Out, In>;
-            fn calc_ref(&self, v: &In) -> Out {
-                let inner = self.sym.calc_ref(v);
-                inner.$me()
-            }
             fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
                 let df = self.sym.clone().diff(dm).to_expr();
                 let y = $ex(self);
                 df * y
             }
         }
+
+        impl<Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<$op, Sym, Out, In>
+        where
+            Sym: Symbol<Out, In>,
+            Out: ExNumOps
+                + Add<Output = Out>
+                + Sub<Output = Out>
+                + Mul<Output = Out>
+                + Div<Output = Out>,
+            In: ?Sized + Any,
+        {
+            fn calc_ref(&self, v: &In) -> Out {
+                let inner = self.sym.calc_ref(v);
+                inner.$me()
+            }
+            fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+                Arc::new(self.clone().diff(dm))
+            }
+            fn as_any(&self) -> &(dyn Any) {
+                self
+            }
+        }
     };
 }
 
 FlaotSymbols!(
-    (Recip, recip,  RecipOp, (|x : Self| -(x.sym.to_expr().square()).recip() ));
-    (Exp,   exp,    ExpOp,   (|x : Self| x));
+    (Recip, recip,  RecipOp, (|x : Self| NegSym::new(SquareSym::new(x.sym).recip()) ));
+    (Exp,   exp,    ExpOp,   (|x : Self| x ));
     (Sin,   sin,    SinOp,   (|x : Self| x.sym.cos() ));
-    (Cos,   cos,    CosOp,   (|x : Self| -(x.sym.sin().to_expr()) ));
-    (Tan,   tan,    TanOp,   (|x : Self| x.sym.cos().to_expr().square().recip() ));
-    (Sqrt,  sqrt,   SqrtOp,  (|x : Self| (Const(Out::two()).to_expr() * x).recip() ));
+    (Cos,   cos,    CosOp,   (|x : Self| NegSym::new(x.sym.sin()) ));
+    (Tan,   tan,    TanOp,   (|x : Self| SquareSym::new(x.sym.cos()).recip() ));
+    (Sqrt,  sqrt,   SqrtOp,  (|x : Self| MulSym::new(Const(Out::two()),x).recip() ));
     (Ln,    ln,     LnOp,    (|x : Self| x.sym.recip() ));
     (Sinh,  sinh,   SinhOp,  (|x : Self| x.sym.cosh() ));
     (Cosh,  cosh,   CoshOp,  (|x : Self| x.sym.sinh() ));
-    (Tanh,  tanh,   TanhOp,  (|x : Self| x.sym.cosh().to_expr().square().recip() ));
-    (Asin,  asin,   AsinOp,  (|x : Self| (Const::one().to_expr() - x.sym.to_expr().square().inner()).sqrt().recip() ));
-    (Acos,  acos,   AcosOp,  (|x : Self| -(Const::one().to_expr() - x.sym.to_expr().square().inner()).sqrt().recip() ));
-    (Atan,  atan,   AtanOp,  (|x : Self| (x.sym.to_expr().square() + Const::one()).recip() ));
-    (Asinh, asinh,  AsinhOp, (|x : Self| (x.sym.to_expr().square() + Const::one()).sqrt().recip() ));
-    (Acosh, acosh,  AcoshOp, (|x : Self| (x.sym.to_expr().square() - Const::one()).sqrt().recip() ));
-    (Atanh, atanh,  AtanhOp, (|x : Self| (Const::one().to_expr() - x.sym.to_expr().square().inner()).recip() ));
-    (Ln_1p, ln_1p,  LnOp1p,  (|x : Self| (x.sym.to_expr() + Const::one()).recip() ));
-    (Log2,  log2,   Log2,    (|x : Self| (x.sym.to_expr() * Const(Out::ln_2()) ).recip() ));
-    (Log10, log10,  Log10,   (|x : Self| (x.sym.to_expr() * Const(Out::ln_10()) ).recip() ));
+    (Tanh,  tanh,   TanhOp,  (|x : Self| SquareSym::new(x.sym.cosh()).recip() ));
+    (Asin,  asin,   AsinOp,  (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
+    (Acos,  acos,   AcosOp,  (|x : Self| NegSym::new(SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip()) ));
+    (Atan,  atan,   AtanOp,  (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).recip() ));
+    (Asinh, asinh,  AsinhOp, (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
+    (Acosh, acosh,  AcoshOp, (|x : Self| SubSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
+    (Atanh, atanh,  AtanhOp, (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
+    (Ln1p,  ln_1p,  Ln1pOp,  (|x : Self| AddSym::new(x.sym, Const::one()).recip() ));
+    (Log2,  log2,   Log2Op,  (|x : Self| MulSym::new(x.sym, Const(Out::ln_2()) ).recip() ));
+    (Log10, log10,  Log10Op, (|x : Self| MulSym::new(x.sym, Const(Out::ln_10()) ).recip() ));
     (ExpM1, exp_m1, ExpM1Op, (|x : Self| x ));
-    (Exp2,  exp2,   Exp2Op,  (|x : Self| Const(Out::ln_2()).to_expr() * x ));
+    (Exp2,  exp2,   Exp2Op,  (|x : Self| MulSym::new(Const(Out::ln_2()), x) ));
 );
 
 impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym
@@ -190,7 +210,7 @@ where
 {
 }
 
-/// [`BinaryOp`](`crate::BinaryOp`) marker for [`pow`](`num_traits::pow::Pow`)
+/// [`BinaryOp`] marker for [`pow`](`num_traits::pow::Pow`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct PowOp;
 impl BinaryOp for PowOp {}
@@ -202,8 +222,8 @@ where
     Out: ExNumOps + Pow<Out, Output = Out>,
     In: ?Sized + Any,
 {
-    fn calc_dyn(&self, value: &In) -> Out {
-        self.calc_ref(value)
+    fn calc_ref(&self, value: &In) -> Out {
+        self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
     }
     fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
         let sym1 = self.sym1.clone();
@@ -226,9 +246,6 @@ where
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
-    fn calc_ref(&self, value: &In) -> Out {
-        self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
-    }
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         let sym1 = self.sym1.clone();
         let sym2 = self.sym2.clone();
