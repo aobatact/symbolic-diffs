@@ -1,10 +1,9 @@
-/// currently not working.
+//! currently not working with div.
 use crate::float_ops::*;
 use crate::ops::*;
 use crate::*;
 use core::{
     any::Any,
-    //fmt::{Debug, Error, Formatter},
     ops::{Add, Div, Mul, Neg, Sub},
 };
 use std::sync::Arc;
@@ -134,7 +133,16 @@ where
 
 impl<Out, In> Div<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: Any + Add<Output = Out> + Mul<Output = Out> + Sub<Output = Out> + Div<Output = Out> + Zero,
+    Out: Any
+        + Add<Output = Out>
+        + Mul<Output = Out>
+        + Sub<Output = Out>
+        + Div<Output = Out>
+        + Any
+        + Clone
+        + Zero
+        + One
+        + Display,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
@@ -145,7 +153,7 @@ where
         if l.downcast_ref::<ZeroSym>().is_some() || r.downcast_ref::<OneSym>().is_some() {
             self
         } else {
-            unimplemented!("with div, compile freeze");
+            //unimplemented!("with div, compile freeze");
             DivSym::new(self.0, other).to_dyn_expr()
         }
     }
@@ -327,7 +335,7 @@ mod tests {
         assert_eq!(-72., xy.calc(v1));
 
         //compile freeze for div
-        //let xdy = x.clone() / y.clone();
+        let xdy = x.clone() / y.clone();
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
 
         let xe = float_ops::ExNumOps::exp(x.clone());

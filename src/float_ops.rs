@@ -1,6 +1,7 @@
 //! Module for operating float-like type.
 //! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type impliments [`ExNumOps`]
 //!
+use crate::ops::{AddSym, DivSym, MulSym, NegSym, SquareSym, SubSym};
 use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 #[cfg(feature = "num-complex")]
@@ -177,27 +178,27 @@ macro_rules! FloatOps {
 }
 
 FlaotSymbols!(
-    (Recip, recip,  RecipOp, (|x : Self| -(x.sym.to_expr().square()).recip() ));
-    (Exp,   exp,    ExpOp,   (|x : Self| x));
+    (Recip, recip,  RecipOp, (|x : Self| NegSym::new(SquareSym::new(x.sym).recip()) ));
+    (Exp,   exp,    ExpOp,   (|x : Self| x ));
     (Sin,   sin,    SinOp,   (|x : Self| x.sym.cos() ));
-    (Cos,   cos,    CosOp,   (|x : Self| -(x.sym.sin().to_expr()) ));
-    (Tan,   tan,    TanOp,   (|x : Self| x.sym.cos().to_expr().square().recip() ));
-    (Sqrt,  sqrt,   SqrtOp,  (|x : Self| (Const(Out::two()).to_expr() * x).recip() ));
+    (Cos,   cos,    CosOp,   (|x : Self| NegSym::new(x.sym.sin()) ));
+    (Tan,   tan,    TanOp,   (|x : Self| SquareSym::new(x.sym.cos()).recip() ));
+    (Sqrt,  sqrt,   SqrtOp,  (|x : Self| MulSym::new(Const(Out::two()),x).recip() ));
     (Ln,    ln,     LnOp,    (|x : Self| x.sym.recip() ));
     (Sinh,  sinh,   SinhOp,  (|x : Self| x.sym.cosh() ));
     (Cosh,  cosh,   CoshOp,  (|x : Self| x.sym.sinh() ));
-    (Tanh,  tanh,   TanhOp,  (|x : Self| x.sym.cosh().to_expr().square().recip() ));
-    (Asin,  asin,   AsinOp,  (|x : Self| (Const::one().to_expr() - x.sym.to_expr().square().inner()).sqrt().recip() ));
-    (Acos,  acos,   AcosOp,  (|x : Self| -(Const::one().to_expr() - x.sym.to_expr().square().inner()).sqrt().recip() ));
-    (Atan,  atan,   AtanOp,  (|x : Self| (x.sym.to_expr().square() + Const::one()).recip() ));
-    (Asinh, asinh,  AsinhOp, (|x : Self| (x.sym.to_expr().square() + Const::one()).sqrt().recip() ));
-    (Acosh, acosh,  AcoshOp, (|x : Self| (x.sym.to_expr().square() - Const::one()).sqrt().recip() ));
-    (Atanh, atanh,  AtanhOp, (|x : Self| (Const::one().to_expr() - x.sym.to_expr().square().inner()).recip() ));
-    (Ln_1p, ln_1p,  LnOp1p,  (|x : Self| (x.sym.to_expr() + Const::one()).recip() ));
-    (Log2,  log2,   Log2,    (|x : Self| (x.sym.to_expr() * Const(Out::ln_2()) ).recip() ));
-    (Log10, log10,  Log10,   (|x : Self| (x.sym.to_expr() * Const(Out::ln_10()) ).recip() ));
+    (Tanh,  tanh,   TanhOp,  (|x : Self| SquareSym::new(x.sym.cosh()).recip() ));
+    (Asin,  asin,   AsinOp,  (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
+    (Acos,  acos,   AcosOp,  (|x : Self| NegSym::new(SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip()) ));
+    (Atan,  atan,   AtanOp,  (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).recip() ));
+    (Asinh, asinh,  AsinhOp, (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
+    (Acosh, acosh,  AcoshOp, (|x : Self| SubSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
+    (Atanh, atanh,  AtanhOp, (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
+    (Ln1p,  ln_1p,  Ln1pOp,  (|x : Self| AddSym::new(x.sym, Const::one()).recip() ));
+    (Log2,  log2,   Log2Op,  (|x : Self| MulSym::new(x.sym, Const(Out::ln_2()) ).recip() ));
+    (Log10, log10,  Log10Op, (|x : Self| MulSym::new(x.sym, Const(Out::ln_10()) ).recip() ));
     (ExpM1, exp_m1, ExpM1Op, (|x : Self| x ));
-    (Exp2,  exp2,   Exp2Op,  (|x : Self| Const(Out::ln_2()).to_expr() * x ));
+    (Exp2,  exp2,   Exp2Op,  (|x : Self| MulSym::new(Const(Out::ln_2()), x) ));
 );
 
 impl<Sym, Out, In> UnaryFloatSymbolEx<Out, In> for Sym

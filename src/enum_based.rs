@@ -32,7 +32,6 @@ impl<Out: Display, In: ?Sized> Display for EExpr<Out, In> {
             EExpr::Zero => ZeroSym.fmt(fmt),
             EExpr::One => OneSym.fmt(fmt),
             EExpr::Const(c) => c.fmt(fmt),
-            //EExpr::Variable(v) => v.fmt(fmt),
             EExpr::Dynamic(d) => d.fmt(fmt),
         }
     }
@@ -48,7 +47,6 @@ where
             EExpr::Zero => Out::zero(),
             EExpr::One => Out::one(),
             EExpr::Const(Const(c)) => c.clone(),
-            //EExpr::Variable(v) => v.calc_ref(i),
             EExpr::Dynamic(d) => d.calc_ref(i),
         }
     }

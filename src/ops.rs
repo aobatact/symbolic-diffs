@@ -256,7 +256,15 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out> + Any,
+    Out: Add<Output = Out>
+        + Sub<Output = Out>
+        + Mul<Output = Out>
+        + Div<Output = Out>
+        + Any
+        + Clone
+        + Zero
+        + One
+        + Display,
     In: ?Sized + Any,
 {
     #[inline]
@@ -275,7 +283,15 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Sub<Output = Out> + Mul<Output = Out> + Div<Output = Out> + Any,
+    Out: Add<Output = Out>
+        + Sub<Output = Out>
+        + Mul<Output = Out>
+        + Div<Output = Out>
+        + Any
+        + Clone
+        + Zero
+        + One
+        + Display,
     In: ?Sized + Any,
 {
     type Derivative = DivSym<
@@ -285,7 +301,7 @@ where
             Out,
             In,
         >,
-        MulSym<Sym2, Sym2, Out, In>,
+        UnarySym<SquareOp, Sym2, Out, In>,
         Out,
         In,
     >;
@@ -295,18 +311,18 @@ where
                 BinarySym::new(self.sym1.clone().diff(dm), self.sym2.clone()),
                 BinarySym::new(self.sym1, self.sym2.clone().diff(dm)),
             ),
-            BinarySym::new(self.sym2.clone(), self.sym2),
+            UnarySym::new(self.sym2),
         )
     }
 }
 
 macro_rules! op_expr {
-    ($t:ident,$tsym:ident,$op:ident, [$($cond:ident),* $(,)*] ) => {
+    ($t:ident,$tsym:ident,$op:ident, [$($cond:ident),* $(,)*] $(,)* $($cond_nonop:ident),* $(,)*) => {
         impl<L, R, O, I> $t<R> for Expr<L, O, I>
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O> + Any,
+            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any,
             I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
@@ -320,7 +336,7 @@ macro_rules! op_expr {
 op_expr!(Add, AddSym, add, []);
 op_expr!(Sub, SubSym, sub, []);
 op_expr!(Mul, MulSym, mul, [Add]);
-op_expr!(Div, DivSym, div, [Add, Sub, Mul]);
+op_expr!(Div, DivSym, div, [Add, Sub, Mul], Clone, Zero, One, Display);
 
 /// [`UnaryOp`](`crate::UnaryOp`) marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -397,8 +413,8 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SquareOp;
 impl UnaryOp for SquareOp {}
-
-impl<Sym, Out, In> DynamicSymbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
+pub type SquareSym<Sym, Out, In> = UnarySym<SquareOp, Sym, Out, In>;
+impl<Sym, Out, In> DynamicSymbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
@@ -416,7 +432,7 @@ where
     }
 }
 
-impl<Sym, Out, In> Symbol<Out, In> for UnarySym<SquareOp, Sym, Out, In>
+impl<Sym, Out, In> Symbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
