@@ -168,8 +168,8 @@ macro_rules! FloatOps {
                 let inner = self.sym.calc_ref(v);
                 inner.$me()
             }
-            fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-                Arc::new(self.clone().diff(dm))
+            fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+                self.clone().diff(dm).to_dyn_expr()
             }
             fn as_any(&self) -> &(dyn Any) {
                 self
@@ -225,13 +225,13 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
         let sym1 = self.sym1.clone();
         let sym2 = self.sym2.clone();
         let s2dif = sym2.clone().diff(dm);
         let a = sym1.clone().diff(dm).to_expr() * sym2 / sym1.clone();
         let b = sym1.ln().to_expr() * s2dif;
-        Arc::new(((a + b.inner()) * self.clone()).inner())
+        ((a + b.inner()) * self.clone()).inner().to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self

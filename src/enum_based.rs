@@ -49,10 +49,10 @@ impl<Out: Display, In: ?Sized> Display for DynExpr<Out, In> {
     }
 }
 
-impl<Out: Display, In: ?Sized> DynamicSymbol<Out, In> for DynExpr<Out, In>
+impl<Out, In: ?Sized> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any,
-    Out: Zero + Clone + One,
+    Out: Zero + Clone + One + Display,
 {
     fn calc_ref(&self, i: &In) -> Out {
         match self {
@@ -62,11 +62,11 @@ where
             DynExpr::Dynamic(d) => d.calc_ref(i),
         }
     }
-    fn diff_dyn(&self, d: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {
+    fn diff_dyn(&self, d: usize) -> DynExpr<Out, In> {
         match self {
-            DynExpr::Zero => ZeroSym.diff_dyn(d),
-            DynExpr::One => OneSym.diff_dyn(d),
-            DynExpr::Const(c) => c.diff_dyn(d),
+            DynExpr::Zero => DynExpr::Zero,
+            DynExpr::One => DynExpr::Zero,
+            DynExpr::Const(_) => DynExpr::Zero,
             DynExpr::Dynamic(dy) => dy.diff_dyn(d),
         }
     }
@@ -75,16 +75,16 @@ where
     }
 }
 
-impl<Out: Display, In: ?Sized> Symbol<Out, In> for DynExpr<Out, In>
+impl<Out, In: ?Sized> Symbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One,
+    Out: Zero + Clone + One + Display,
 {
     type Derivative = DynExpr<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         match self {
             DynExpr::Zero | DynExpr::One | DynExpr::Const(_) => DynExpr::Zero,
-            DynExpr::Dynamic(d) => DynExpr::Dynamic(d.diff_dyn(dm)),
+            DynExpr::Dynamic(d) => d.diff_dyn(dm).to_dyn_expr(),
         }
     }
     fn to_dyn_expr(self) -> DynExpr<Out, In> {

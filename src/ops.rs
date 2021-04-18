@@ -34,19 +34,15 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Add<Output = Out> + Any,
+    Out: Add<Output = Out> + Any + Zero + One + Clone + Display,
     In: ?Sized + Any,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(BinarySym::new_with_op(
-            AddOp,
-            self.sym1.diff_dyn(dm),
-            self.sym2.diff_dyn(dm),
-        ))
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+        BinarySym::new_with_op(AddOp, self.sym1.diff_dyn(dm), self.sym2.diff_dyn(dm)).to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -57,7 +53,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Any,
+    Out: Add<Output = Out> + Any + Zero + One + Clone + Display,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -97,19 +93,15 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Sub<Output = Out> + Any,
+    Out: Sub<Output = Out> + Any + Display + One + Zero + Clone,
     In: ?Sized + Any,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(BinarySym::new_with_op(
-            SubOp,
-            self.sym1.diff_dyn(dm),
-            self.sym2.diff_dyn(dm),
-        ))
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+        BinarySym::new_with_op(SubOp, self.sym1.diff_dyn(dm), self.sym2.diff_dyn(dm)).to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -120,7 +112,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + Any,
+    Out: Sub<Output = Out> + Any + Zero + Clone + One + Display,
     In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -172,21 +164,21 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In> + Clone,
     Sym2: DynamicSymbol<Out, In> + Clone,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
     In: ?Sized + Any,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
         let sym2diff = self.sym2.diff_dyn(dm);
         let df = BinarySym::new_with_op(
             AddOp,
             BinarySym::new_with_op(MulOp, self.sym1.diff_dyn(dm), self.sym2.clone()),
             BinarySym::new_with_op(MulOp, self.sym1.clone(), sym2diff),
         );
-        Arc::new(df)
+        DynExpr::Dynamic(Arc::new(df))
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -197,7 +189,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<
@@ -272,8 +264,8 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value) / self.sym2.calc_ref(value)
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().diff(dm))
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+        self.clone().diff(dm).to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -323,7 +315,7 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any,
+            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + Zero + Clone + One + Display,
             I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
@@ -376,8 +368,8 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         -self.sym.calc_ref(value)
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().diff(dm))
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+        self.clone().diff(dm).to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -425,8 +417,8 @@ where
         let x = self.sym.calc_ref(value);
         x.clone() * x
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().diff(dm))
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+        self.clone().diff(dm).to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -477,15 +469,22 @@ impl<Exp> UnaryOp for UnaryPowOp<Exp> {}
 impl<Sym, Out, In, Exp> DynamicSymbol<Out, In> for UnarySym<UnaryPowOp<Exp>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Pow<Exp, Output = Out> + Clone + Any,
+    Out: Add<Output = Out>
+        + Mul<Output = Out>
+        + Pow<Exp, Output = Out>
+        + Clone
+        + Any
+        + Zero
+        + One
+        + Display,
     Exp: Sub<Output = Exp> + One + Clone + Default + Any,
     In: ?Sized + Any,
 {
     fn calc_ref(&self, value: &In) -> Out {
         self.sym.calc_ref(value).pow(self.op.0.clone())
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(self.clone().diff(dm))
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+        self.clone().diff(dm).to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -495,7 +494,14 @@ where
 impl<Sym, Out, In, Exp> Symbol<Out, In> for UnarySym<UnaryPowOp<Exp>, Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Pow<Exp, Output = Out> + Clone + Any,
+    Out: Add<Output = Out>
+        + Mul<Output = Out>
+        + Pow<Exp, Output = Out>
+        + Clone
+        + Any
+        + Zero
+        + One
+        + Display,
     Exp: Sub<Output = Exp> + One + Clone + Default + Any,
     In: ?Sized + Any,
 {
@@ -526,7 +532,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
     In: ?Sized + Any,
 {
     pub fn pow_t<Exp>(self, r: Exp) -> Expr<UnarySym<UnaryPowOp<Exp>, Sym, Out, In>, Out, In>

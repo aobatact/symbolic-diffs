@@ -23,7 +23,7 @@ pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>>;
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In>;
     /// Convert to any for downcast.
     fn as_any(&self) -> &(dyn Any);
 }
@@ -64,7 +64,7 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         self.as_ref().calc_ref(value)
     }
-    fn diff_dyn(&self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+    fn diff_dyn(&self, dim: usize) -> DynExpr<Out, In> {
         self.as_ref().diff_dyn(dim)
     }
     fn as_any(&self) -> &(dyn Any) {
@@ -74,12 +74,12 @@ where
 
 impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
-    Out: Any,
+    Out: Any + Zero + Clone + One + Display,
     In: ?Sized + Any,
 {
-    type Derivative = Arc<dyn DynamicSymbol<Out, In>>;
+    type Derivative = DynExpr<Out, In>;
     #[inline]
-    fn diff(self, dim: usize) -> Arc<(dyn DynamicSymbol<Out, In> + 'static)> {
+    fn diff(self, dim: usize) -> DynExpr<Out, In> {
         self.diff_dyn(dim)
     }
 }
@@ -93,7 +93,7 @@ where
     fn calc_ref(&self, i: &In) -> Out {
         (*self).calc_ref(i)
     }
-    fn diff_dyn(&self, d: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {
+    fn diff_dyn(&self, d: usize) -> DynExpr<Out, In> {
         (*self).diff_dyn(d)
     }
     fn as_any(&self) -> &(dyn std::any::Any + 'static) {
@@ -173,7 +173,7 @@ where
         self.0.calc_ref(value)
     }
     #[inline]
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
         self.0.diff_dyn(dm)
     }
 

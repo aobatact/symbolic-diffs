@@ -6,7 +6,6 @@ use core::{
     ops::{Add, Mul, Sub},
 };
 use num_traits::{One, Pow, Zero};
-use std::sync::Arc;
 #[cfg(feature = "generic-array1")]
 use typenum::marker_traits::Unsigned;
 
@@ -101,19 +100,20 @@ where
             T::zero()
         }
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, GenericArray<T, N>> {
         if dm == Dim::USIZE {
             if self.1.is_one() {
-                return Arc::new(Const::from(T::one()));
+                return DynExpr::One;
             } else if !self.1.is_zero() {
-                return Arc::new(DimMonomial::<Dim, _, _>(
+                return DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
                     self.1.clone() - Degree::one(),
                     self.2,
-                ));
+                )
+                .to_dyn_expr();
             }
         }
-        Arc::new(ZeroSym)
+        DynExpr::Zero
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -199,19 +199,20 @@ where
             T::zero()
         }
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, [T]> {
         if dm == self.dim() {
             if self.1.is_one() {
-                return Arc::new(Const::from(T::one()));
+                return DynExpr::One;
             } else if !self.1.is_zero() {
-                return Arc::new(DimMonomial::<Dim, _, _>(
+                return DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
                     self.1.clone() - Degree::one(),
                     self.2,
-                ));
+                )
+                .to_dyn_expr();
             }
         }
-        Arc::new(ZeroSym)
+        DynExpr::Zero
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -272,20 +273,21 @@ where
             T::zero()
         }
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T; D]>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, [T; D]> {
         debug_assert!(dm < D);
         if dm == self.dim() {
             if self.1.is_one() {
-                return Arc::new(Const::from(T::one()));
+                return DynExpr::One;
             } else if !self.1.is_zero() {
-                return Arc::new(DimMonomial::<Dim, _, _>(
+                return DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
                     self.1.clone() - Degree::one(),
                     self.2,
-                ));
+                )
+                .to_dyn_expr();
             }
         }
-        Arc::new(ZeroSym)
+        DynExpr::Zero
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -337,6 +339,7 @@ where
         + num_traits::Pow<Degree, Output = T>
         + Clone
         + Zero
+        + One
         + Display
         + Any,
     Dim: DimMarker + Any,
@@ -368,6 +371,7 @@ where
         + Clone
         + Zero
         + Display
+        + One
         + Any,
     Dim: DimMarker + Any,
     DimVariable<Dim>: Symbol<T, [T]>,
