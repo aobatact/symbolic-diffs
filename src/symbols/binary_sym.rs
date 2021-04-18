@@ -2,7 +2,7 @@ use crate::*;
 use core::marker::PhantomData;
 use std::fmt;
 
-/// Marker for Binary Operation used in [`BinarySym`](`crate::BinarySym`).
+/// Marker for Binary Operation used in [`BinarySym`].
 pub trait BinaryOp {
     /// Symbol for this expression.
     fn op_symbol() -> Option<&'static str> {

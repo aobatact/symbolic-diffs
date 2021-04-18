@@ -19,7 +19,7 @@ pub use symbols::variables::*;
 /// Trait for Symbol using dynamic.
 pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     /// Calculate the value of this expression.
-    /// Use [`calc`](`crate::SymbolEx::calc`) for owned value for convenience.
+    /// Use [`calc`](`crate::Symbol::calc`) for owned value for convenience.
     fn calc_ref(&self, value: &In) -> Out;
     /// Get the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.

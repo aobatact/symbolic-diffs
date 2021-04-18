@@ -210,7 +210,7 @@ where
 {
 }
 
-/// [`BinaryOp`](`crate::BinaryOp`) marker for [`pow`](`num_traits::pow::Pow`)
+/// [`BinaryOp`] marker for [`pow`](`num_traits::pow::Pow`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct PowOp;
 impl BinaryOp for PowOp {}

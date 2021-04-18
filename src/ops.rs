@@ -4,7 +4,7 @@ use super::*;
 use crate::symbols::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 
-/// [`BinaryOp`](`crate::BinaryOp`) marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
+/// [`BinaryOp`] marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AddOp;
 impl BinaryOp for AddOp {
@@ -66,7 +66,7 @@ where
     }
 }
 
-/// [`BinaryOp`](`crate::BinaryOp`) marker for [`-`](`core::ops::Sub`) with [`SubSym`](`crate::ops::SubSym`)
+/// [`BinaryOp`] marker for [`-`](`core::ops::Sub`) with [`SubSym`](`crate::ops::SubSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SubOp;
 impl BinaryOp for SubOp {
@@ -129,7 +129,7 @@ where
     }
 }
 
-/// [`BinaryOp`](`crate::BinaryOp`) marker for [`*`](`core::ops::Mul`) with [`MulSym`](`crate::ops::MulSym`)
+/// [`BinaryOp`] marker for [`*`](`core::ops::Mul`) with [`MulSym`](`crate::ops::MulSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct MulOp;
 impl BinaryOp for MulOp {
@@ -215,7 +215,7 @@ where
     }
 }
 
-/// [`BinaryOp`](`crate::BinaryOp`) marker for [`/`](`core::ops::Div`) with [`DivSym`](`crate::ops::DivSym`)
+/// [`BinaryOp`] marker for [`/`](`core::ops::Div`) with [`DivSym`](`crate::ops::DivSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct DivOp;
 impl BinaryOp for DivOp {
@@ -339,7 +339,7 @@ op_expr!(Sub, SubSym, sub, []);
 op_expr!(Mul, MulSym, mul, [Add]);
 op_expr!(Div, DivSym, div, [Add, Sub, Mul], Clone, Zero, One, Display);
 
-/// [`UnaryOp`](`crate::UnaryOp`) marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
+/// [`UnaryOp`] marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct NegOp;
 impl UnaryOp for NegOp {
@@ -408,7 +408,7 @@ where
     }
 }
 
-/// [`UnaryOp`](`crate::UnaryOp`) marker for `x` [*](`core::ops::Mul`)`x`
+/// [`UnaryOp`] marker for `x` [*](`core::ops::Mul`)`x`
 ///
 /// This is same as `x * x`, but for optimization used in [`UnaryFloatSymbolEx`](`crate::float_ops::UnaryFloatSymbolEx`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -459,9 +459,9 @@ where
     }
 }
 
-/// [`UnaryOp`](`crate::UnaryOp`) marker for [`pow`](`num_traits::pow::Pow`)
+/// [`UnaryOp`] marker for [`pow`](`num_traits::pow::Pow`)
 ///
-/// Unlike other [`UnaryOp`](`crate::UnaryOp`), this has an field to represent the pow.
+/// Unlike other [`UnaryOp`], this has an field to represent the pow.
 /// ```
 /// # use symbolic_diffs::*;
 /// # use typenum::*;

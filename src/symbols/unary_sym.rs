@@ -2,7 +2,7 @@ use crate::*;
 use core::marker::PhantomData;
 use std::fmt;
 
-/// Marker for Unary Operation used in [`UnarySym`](`crate::UnarySym`).
+/// Marker for Unary Operation used in [`UnarySym`].
 pub trait UnaryOp {
     ///Returns the op name.
     fn op_name<'a>() -> &'a str {
