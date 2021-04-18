@@ -89,3 +89,11 @@ where
         }
     }
 }
+
+impl<Op: UnaryOp, Sym: DynamicSymbol<Out, In>, Out, In: ?Sized> Display
+    for UnarySym<Op, Sym, Out, In>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        Op::format_expression(f, |f| self.sym.fmt(f))
+    }
+}

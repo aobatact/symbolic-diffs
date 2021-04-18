@@ -1,7 +1,6 @@
 use crate::*;
 use core::{any::Any, fmt::Display};
 use num_traits::{One, Zero};
-use std::sync::Arc;
 #[cfg(feature = "generic-array1")]
 use typenum::marker_traits::Unsigned;
 
@@ -58,6 +57,12 @@ where
     }
 }
 
+impl<Dim: DimMarker> Display for DimVariable<Dim> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_fmt(format_args!("x_{}", self.dim()))
+    }
+}
+
 impl<Dim: DimMarker + Default> From<Variable> for DimVariable<Dim> {
     fn from(_: Variable) -> Self {
         DimVariable::new()
@@ -76,11 +81,11 @@ where
         debug_assert!(<Le<Dim, N> as Bit>::BOOL);
         v[Dim::USIZE].clone()
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, GenericArray<T, N>>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, GenericArray<T, N>> {
         if dm == self.0.dim() {
-            Arc::new(OneSym)
+            DynExpr::One
         } else {
-            Arc::new(ZeroSym)
+            DynExpr::Zero
         }
     }
 
@@ -98,11 +103,11 @@ where
         v[self.0.dim()].clone()
     }
 
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T]>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, [T]> {
         if dm == self.0.dim() {
-            Arc::new(OneSym)
+            DynExpr::One
         } else {
-            Arc::new(ZeroSym)
+            DynExpr::Zero
         }
     }
 
@@ -120,12 +125,12 @@ where
         v[self.0.dim()].clone()
     }
 
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<T, [T; D]>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, [T; D]> {
         debug_assert!(dm < D, "larger dimention {} for {}", dm, D);
         if dm == self.0.dim() {
-            Arc::new(OneSym)
+            DynExpr::One
         } else {
-            Arc::new(ZeroSym)
+            DynExpr::Zero
         }
     }
 

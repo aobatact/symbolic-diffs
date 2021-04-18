@@ -5,7 +5,6 @@ use core::{any::Any, borrow::Borrow, fmt::Display, ops::Mul};
 pub use d_monomial::*;
 pub use d_variable::*;
 use num_traits::{One, Zero};
-use std::sync::Arc;
 #[cfg(feature = "typenum")]
 use typenum::marker_traits::Unsigned;
 
@@ -68,8 +67,8 @@ where
         Out::zero()
     }
     #[inline]
-    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(ZeroSym)
+    fn diff_dyn(&self, _dm: usize) -> DynExpr<Out, In> {
+        DynExpr::Zero
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -89,6 +88,9 @@ where
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
     }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr::Zero
+    }
 }
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
@@ -107,8 +109,8 @@ where
     fn calc_ref(&self, _value: &In) -> Out {
         Out::one()
     }
-    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(ZeroSym)
+    fn diff_dyn(&self, _dm: usize) -> DynExpr<Out, In> {
+        DynExpr::Zero
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -126,6 +128,9 @@ where
     #[inline]
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
+    }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr::One
     }
 }
 
@@ -145,8 +150,8 @@ where
     fn calc_ref(&self, _value: &In) -> Out {
         self.0.clone()
     }
-    fn diff_dyn(&self, _dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-        Arc::new(ZeroSym)
+    fn diff_dyn(&self, _dm: usize) -> DynExpr<Out, In> {
+        DynExpr::Zero
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -163,6 +168,9 @@ where
     /// returns [`ZeroSym`](`crate::ZeroSym`)
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
+    }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr::Const(self)
     }
 }
 
@@ -211,9 +219,9 @@ where
     fn calc_ref(&self, value: &In) -> Out {
         value.to_owned()
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
         debug_assert!(dm == 0, "Should use DimVariable instead for non zero dim.");
-        Arc::new(OneSym)
+        DynExpr::One
     }
 
     fn as_any(&self) -> &(dyn Any) {
@@ -247,6 +255,30 @@ where
     /// ```
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         OneSym
+    }
+}
+
+impl Display for ZeroSym {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("0")
+    }
+}
+
+impl Display for OneSym {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("1")
+    }
+}
+
+impl<T: Display> Display for Const<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        self.0.fmt(f)
+    }
+}
+
+impl Display for Variable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("x")
     }
 }
 

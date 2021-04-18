@@ -168,8 +168,8 @@ macro_rules! FloatOps {
                 let inner = self.sym.calc_ref(v);
                 inner.$me()
             }
-            fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
-                Arc::new(self.clone().diff(dm))
+            fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
+                self.clone().diff(dm).to_dyn_expr()
             }
             fn as_any(&self) -> &(dyn Any) {
                 self
@@ -191,13 +191,13 @@ FlaotSymbols!(
     (Tanh,  tanh,   TanhOp,  (|x : Self| SquareSym::new(x.sym.cosh()).recip() ));
     (Asin,  asin,   AsinOp,  (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
     (Acos,  acos,   AcosOp,  (|x : Self| NegSym::new(SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip()) ));
-    (Atan,  atan,   AtanOp,  (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).recip() ));
-    (Asinh, asinh,  AsinhOp, (|x : Self| AddSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
+    (Atan,  atan,   AtanOp,  (|x : Self| AddSym::new(Const::one(),SquareSym::new(x.sym) ).recip() ));
+    (Asinh, asinh,  AsinhOp, (|x : Self| AddSym::new(Const::one(),SquareSym::new(x.sym) ).sqrt().recip() ));
     (Acosh, acosh,  AcoshOp, (|x : Self| SubSym::new(SquareSym::new(x.sym), Const::one()).sqrt().recip() ));
     (Atanh, atanh,  AtanhOp, (|x : Self| SubSym::new(Const::one(), SquareSym::new(x.sym)).sqrt().recip() ));
-    (Ln1p,  ln_1p,  Ln1pOp,  (|x : Self| AddSym::new(x.sym, Const::one()).recip() ));
-    (Log2,  log2,   Log2Op,  (|x : Self| MulSym::new(x.sym, Const(Out::ln_2()) ).recip() ));
-    (Log10, log10,  Log10Op, (|x : Self| MulSym::new(x.sym, Const(Out::ln_10()) ).recip() ));
+    (Ln1p,  ln_1p,  Ln1pOp,  (|x : Self| AddSym::new(Const::one(), x.sym).recip() ));
+    (Log2,  log2,   Log2Op,  (|x : Self| MulSym::new(Const(Out::ln_2()), x.sym ).recip() ));
+    (Log10, log10,  Log10Op, (|x : Self| MulSym::new(Const(Out::ln_10()),x.sym  ).recip() ));
     (ExpM1, exp_m1, ExpM1Op, (|x : Self| x ));
     (Exp2,  exp2,   Exp2Op,  (|x : Self| MulSym::new(Const(Out::ln_2()), x) ));
 );
@@ -218,20 +218,20 @@ impl BinaryOp for PowOp {}
 impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
 where
     Sym1: UnaryFloatSymbolEx<Out, In>,
-    Sym2: SymbolEx<Out, In>,
+    Sym2: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
     In: ?Sized + Any,
 {
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
     }
-    fn diff_dyn(&self, dm: usize) -> Arc<dyn DynamicSymbol<Out, In>> {
+    fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
         let sym1 = self.sym1.clone();
         let sym2 = self.sym2.clone();
         let s2dif = sym2.clone().diff(dm);
         let a = sym1.clone().diff(dm).to_expr() * sym2 / sym1.clone();
         let b = sym1.ln().to_expr() * s2dif;
-        Arc::new(((a + b.inner()) * self.clone()).inner())
+        ((a + b.inner()) * self.clone()).inner().to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -241,7 +241,7 @@ where
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
 where
     Sym1: UnaryFloatSymbolEx<Out, In>,
-    Sym2: SymbolEx<Out, In>,
+    Sym2: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
     In: ?Sized + Any,
 {
@@ -265,7 +265,7 @@ where
 {
     type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
     fn pow(self, r: R) -> Self::Output {
-        BinarySym::new(self.0, r).into()
+        BinarySym::new(self.inner(), r).into()
     }
 }
 
