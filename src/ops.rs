@@ -1,6 +1,7 @@
 //! Set of basic numerical operations
 //! These are internaly used from `Expr`.  
 use super::*;
+use crate::symbols::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 
 /// [`BinaryOp`](`crate::BinaryOp`) marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
@@ -31,8 +32,8 @@ pub type AddSym<Sym1, Sym2, Out, In> = BinarySym<AddOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
-    Sym1: Symbol<Out, In>,
-    Sym2: Symbol<Out, In>,
+    Sym1: DynamicSymbol<Out, In>,
+    Sym2: DynamicSymbol<Out, In>,
     Out: Add<Output = Out> + Any,
     In: ?Sized + Any,
 {
@@ -94,8 +95,8 @@ pub type SubSym<Sym1, Sym2, Out, In> = BinarySym<SubOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
-    Sym1: Symbol<Out, In>,
-    Sym2: Symbol<Out, In>,
+    Sym1: DynamicSymbol<Out, In>,
+    Sym2: DynamicSymbol<Out, In>,
     Out: Sub<Output = Out> + Any,
     In: ?Sized + Any,
 {
@@ -169,8 +170,8 @@ pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
-    Sym1: Symbol<Out, In>,
-    Sym2: Symbol<Out, In>,
+    Sym1: DynamicSymbol<Out, In> + Clone,
+    Sym2: DynamicSymbol<Out, In> + Clone,
     Out: Add<Output = Out> + Mul<Output = Out> + Any,
     In: ?Sized + Any,
 {

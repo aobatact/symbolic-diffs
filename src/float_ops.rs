@@ -1,7 +1,8 @@
 //! Module for operating float-like type.
 //! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type impliments [`ExNumOps`]
 //!
-use crate::ops::{AddSym, DivSym, MulSym, NegSym, SquareSym, SubSym};
+use crate::ops::{AddSym, MulSym, NegSym, SquareSym, SubSym};
+use crate::symbols::*;
 use crate::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
 #[cfg(feature = "num-complex")]

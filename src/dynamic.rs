@@ -1,6 +1,7 @@
 //! currently not working with div.
 use crate::float_ops::*;
 use crate::ops::*;
+use crate::symbols::*;
 use crate::*;
 use core::{
     any::Any,
@@ -265,11 +266,10 @@ where
 }
 
 #[cfg(test)]
-#[cfg(feature = "typenum")]
 mod tests {
     use crate::dynamic::*;
-    use generic_array::*;
     use std::sync::Arc;
+    #[cfg(feature = "typenum")]
     use typenum::*;
 
     #[test]
@@ -319,6 +319,7 @@ mod tests {
         assert_eq!(48., y1.diff(0).calc_ref(&v));
     }
 
+    #[cfg(feature = "typenum")]
     #[test]
     fn dynexpr() {
         let v1 = [2., 3.];
@@ -335,7 +336,7 @@ mod tests {
         assert_eq!(-72., xy.calc(v1));
 
         //compile freeze for div
-        let xdy = x.clone() / y.clone();
+        //let xdy = x.clone() / y.clone();
         //assert_eq!(-(8.0/9.0), xdy.calc(v1));
 
         let xe = float_ops::ExNumOps::exp(x.clone());

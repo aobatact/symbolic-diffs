@@ -12,6 +12,19 @@ pub enum EExpr<Out, In: ?Sized> {
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
 
+impl<Out, In: ?Sized> EExpr<Out, In> {
+    pub fn try_downcast<T>(&self) -> Option<&T>
+    where
+        T: Any,
+    {
+        if let EExpr::Dynamic(ref d) = self {
+            d.as_ref().as_any().downcast_ref::<T>()
+        } else {
+            None
+        }
+    }
+}
+
 unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Send for EExpr<Out, In> {}
 unsafe impl<Out: Send + Sync, In: ?Sized + Send + Sync> Sync for EExpr<Out, In> {}
 
