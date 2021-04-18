@@ -221,7 +221,10 @@ where
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 / c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(DivSym::new(l, r))),
+            (l, r) => {
+                //todo!();
+                DivSym::new(l, r).to_dyn_expr()
+            }
         }
     }
 }
@@ -354,12 +357,22 @@ mod tests {
         let xy = x.clone() * y.clone();
         assert_eq!(-72., xy.calc(v1));
 
-        //compile freeze for div
-        //let xdy = x.clone() / y.clone();
-        //assert_eq!(-(8.0/9.0), xdy.calc(v1));
-
         let xe = float_ops::ExNumOps::exp(x.clone());
         assert_eq!((8_f32).exp(), xe.calc(v1));
+    }
+
+    #[cfg(feature = "typenum")]
+    #[test]
+    fn dynexpr_div() {
+        let v1 = [2., 3.];
+        let x: DynExpr<f32, _> = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        //let x = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        let y: DynExpr<f32, _> = DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
+        assert_eq!(8., x.calc(v1));
+
+        //compile freeze for div
+        let xdy = x.clone() / y.clone();
+        //assert_eq!(-(8.0/9.0), xdy.calc(v1));
 
         let _add = DynExpr::Dynamic(Arc::new(AddSym::new(x.clone(), y.clone())));
         let _sub = DynExpr::Dynamic(Arc::new(SubSym::new(x.clone(), y.clone())));
@@ -367,5 +380,17 @@ mod tests {
         //compile freeze for div
         let _div = Arc::new(DivSym::new(x.clone(), y.clone()));
         //let _div = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
+
+        let x = DimMonomial::<U0, f32, u8>::new(6., 2).to_expr();
+        let y = DimMonomial::<U1, f32, u8>::new(3., 1);
+        let xy = x / y;
+        let v = [1., 1.];
+        let v1 = [6., 3.];
+        assert_eq!(2., xy.calc(v));
+        assert_eq!(4., xy.clone().diff(0).calc(v));
+        assert_eq!(-2., xy.clone().diff(1).calc(v));
+        assert_eq!(24., xy.calc(v1));
+        assert_eq!(8., xy.clone().diff(0).calc(v1));
+        assert_eq!(-8., xy.diff(1).calc(v1));
     }
 }

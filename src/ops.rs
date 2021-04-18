@@ -231,17 +231,17 @@ impl BinaryOp for DivOp {
 /// ```
 /// # use symbolic_diffs::*;
 /// # use typenum::*;
-/// let x = DimMonomial::<U0,i32,u8>::new(6,2).to_expr();
-/// let y = DimMonomial::<U1,i32,u8>::new(3,1);
+/// let x = DimMonomial::<U0,f32,u8>::new(6.,2).to_expr();
+/// let y = DimMonomial::<U1,f32,u8>::new(3.,1);
 /// let xy = x / y;
-/// let v = [1, 1];
-/// let v1 = [6, 3];
-/// assert_eq!(2,xy.calc(v));
-/// assert_eq!(4,xy.clone().diff(0).calc(v));
-/// assert_eq!(-2,xy.clone().diff(1).calc(v));
-/// assert_eq!(24,xy.calc(v1));
-/// assert_eq!(8,xy.clone().diff(0).calc(v1));
-/// assert_eq!(-8,xy.diff(1).calc(v1));
+/// let v = [1., 1.];
+/// let v1 = [6., 3.];
+/// assert_eq!(2.,xy.calc(v));
+/// assert_eq!(4.,xy.clone().diff(0).calc(v));
+/// assert_eq!(-2.,xy.clone().diff(1).calc(v));
+/// assert_eq!(24.,xy.calc(v1));
+/// assert_eq!(8.,xy.clone().diff(0).calc(v1));
+/// assert_eq!(-8.,xy.diff(1).calc(v1));
 /// ```
 pub type DivSym<Sym1, Sym2, Out, In> = BinarySym<DivOp, Sym1, Sym2, Out, In>;
 
@@ -272,6 +272,7 @@ where
     }
 }
 
+/*
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
@@ -299,13 +300,43 @@ where
         In,
     >;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
-        BinarySym::new(
-            BinarySym::new(
-                BinarySym::new(self.sym1.clone().diff(dm), self.sym2.clone()),
-                BinarySym::new(self.sym1, self.sym2.clone().diff(dm)),
+        DivSym::new(
+            SubSym::new(
+                MulSym::new(self.sym1.clone().diff(dm), self.sym2.clone()),
+                MulSym::new(self.sym1, self.sym2.clone().diff(dm)),
             ),
             UnarySym::new(self.sym2),
         )
+    }
+}
+*/
+impl<Sym1, Sym2, Out, In> Symbol<Out, In> for DivSym<Sym1, Sym2, Out, In>
+where
+    Sym1: Symbol<Out, In>,
+    Sym2: Symbol<Out, In>,
+    Out: Add<Output = Out>
+        + Sub<Output = Out>
+        + Mul<Output = Out>
+        + Div<Output = Out>
+        + Any
+        + Clone
+        + Zero
+        + One
+        + Display,
+    In: ?Sized + Any,
+{
+    //type Derivative = DivSym<DynExpr<Out, In>, UnarySym<SquareOp, Sym2, Out, In>, Out, In>;
+    type Derivative = DynExpr<Out, In>;
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
+        DivSym::new(
+            SubSym::new(
+                self.sym1.clone().diff_dyn(dm) * self.sym2.clone().to_dyn_expr(),
+                self.sym1.to_dyn_expr() * self.sym2.clone().diff_dyn(dm),
+            )
+            .to_dyn_expr(),
+            UnarySym::new(self.sym2).to_dyn_expr(),
+        )
+        .to_dyn_expr()
     }
 }
 

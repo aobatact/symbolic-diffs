@@ -103,7 +103,7 @@ where
     fn diff_dyn(&self, dm: usize) -> DynExpr<T, GenericArray<T, N>> {
         if dm == Dim::USIZE {
             if self.1.is_one() {
-                return DynExpr::One;
+                return DynExpr::Const(Const(self.0.clone() * T::from(self.1.clone())));
             } else if !self.1.is_zero() {
                 return DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
@@ -202,7 +202,7 @@ where
     fn diff_dyn(&self, dm: usize) -> DynExpr<T, [T]> {
         if dm == self.dim() {
             if self.1.is_one() {
-                return DynExpr::One;
+                return DynExpr::Const(Const(self.0.clone() * T::from(self.1.clone())));
             } else if !self.1.is_zero() {
                 return DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
@@ -277,7 +277,7 @@ where
         debug_assert!(dm < D);
         if dm == self.dim() {
             if self.1.is_one() {
-                return DynExpr::One;
+                return DynExpr::Const(Const(self.0.clone() * self.1.clone().into()));
             } else if !self.1.is_zero() {
                 return DimMonomial::<Dim, _, _>(
                     self.0.clone() * T::from(self.1.clone()),
