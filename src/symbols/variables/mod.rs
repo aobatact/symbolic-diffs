@@ -89,6 +89,9 @@ where
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
     }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr::Zero
+    }
 }
 
 /// [`Symbol`](`crate::Symbol`) represent Zero.
@@ -127,6 +130,9 @@ where
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
     }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr::One
+    }
 }
 
 ///[`Symbol`](`crate::Symbol`) represent an constant value.
@@ -163,6 +169,9 @@ where
     /// returns [`ZeroSym`](`crate::ZeroSym`)
     fn diff(self, _dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
         ZeroSym
+    }
+    fn to_dyn_expr(self) -> DynExpr<Out, In> {
+        DynExpr::Const(self)
     }
 }
 

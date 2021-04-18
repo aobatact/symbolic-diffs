@@ -13,9 +13,14 @@ pub enum DynExpr<Out, In: ?Sized> {
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
 
-impl<Out, In: ?Sized> Clone for DynExpr<Out, In> {
+impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
     fn clone(&self) -> Self {
-        todo!()
+        match self {
+            DynExpr::Zero => DynExpr::Zero,
+            DynExpr::One => DynExpr::One,
+            DynExpr::Const(c) => DynExpr::Const(c.clone()),
+            DynExpr::Dynamic(d) => DynExpr::Dynamic(d.clone()),
+        }
     }
 }
 
@@ -275,5 +280,92 @@ where
         T: Sub<Output = T> + One + Clone + Any + Default,
     {
         UnarySym::new_with_op(UnaryPowOp(r), self).to_dyn_expr()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ops::*;
+    use crate::*;
+    use std::sync::Arc;
+    #[cfg(feature = "typenum")]
+    use typenum::*;
+
+    #[test]
+    fn variable() {
+        let x: Expr<Variable, isize> = Variable.into();
+        assert_eq!(1, x.calc_ref(&1));
+        let y = x + x;
+        assert_eq!(2, y.calc_ref(&1));
+        let z = y.diff_dyn(0);
+        assert_eq!(2, z.calc_ref(&2));
+
+        let x: Expr<Variable, f32> = Variable.into();
+        let w = Arc::new(x);
+        assert_eq!(1., x.calc_ref(&1.));
+        let w = (w as Arc<dyn DynamicSymbol<f32, f32>>).to_expr();
+        assert_eq!(1., x.calc_ref(&1.));
+        let y = w.clone() + w.clone();
+        assert_eq!(2., y.calc_ref(&1.));
+        let y = w.clone() + x;
+        assert_eq!(2., y.calc_ref(&1.));
+        let y = x + w.clone();
+        assert_eq!(2., y.calc_ref(&1.));
+        let z = y.diff_dyn(0);
+        assert_eq!(2., z.calc_ref(&1.));
+
+        let wexp = w.exp();
+        assert_eq!(1_f32.exp(), wexp.calc_ref(&1.));
+        assert_eq!(1_f32.exp(), wexp.diff(0).calc_ref(&1.));
+    }
+
+    #[test]
+    fn monomial() {
+        let x = DimMonomial::<U0, f32, u8>::new(2., 3).to_expr();
+        let v = [2.0];
+        assert_eq!(16., x.calc_ref(&v));
+        let y = x + x;
+        assert_eq!(32., y.calc_ref(&v));
+        let z = y.diff_dyn(0);
+        assert_eq!(48., z.calc_ref(&v));
+
+        let a = z.to_expr() + x;
+        assert_eq!(64., a.calc_ref(&v));
+
+        let x1 = x.diff_dyn(0);
+        let y1 = x + x1;
+        assert_eq!(40., y1.calc_ref(&v));
+        assert_eq!(48., y1.diff(0).calc_ref(&v));
+    }
+
+    #[cfg(feature = "typenum")]
+    #[test]
+    fn dynexpr() {
+        let v1 = [2., 3.];
+        let x: DynExpr<f32, _> = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        //let x = DimMonomial::<U0, f32, u8>::new(2., 2_u8).to_dyn_expr();
+        let y: DynExpr<f32, _> = DimMonomial::<U1, f32, u8>::new(-1., 2_u8).to_dyn_expr();
+        assert_eq!(8., x.calc(v1));
+        let xpy = x.clone() + y.clone();
+        assert_eq!(-1., xpy.calc(v1));
+        let xsy = x.clone() - y.clone();
+        assert_eq!(17., xsy.calc(v1));
+
+        let xy = x.clone() * y.clone();
+        assert_eq!(-72., xy.calc(v1));
+
+        //compile freeze for div
+        //let xdy = x.clone() / y.clone();
+        //assert_eq!(-(8.0/9.0), xdy.calc(v1));
+
+        let xe = float_ops::ExNumOps::exp(x.clone());
+        assert_eq!((8_f32).exp(), xe.calc(v1));
+
+        let _add = DynExpr::Dynamic(Arc::new(AddSym::new(x.clone(), y.clone())));
+        let _sub = DynExpr::Dynamic(Arc::new(SubSym::new(x.clone(), y.clone())));
+        let _mul = DynExpr::Dynamic(Arc::new(MulSym::new(x.clone(), y.clone())));
+        //compile freeze for div
+        let _div = Arc::new(DivSym::new(x.clone(), y.clone()));
+        //let _div = DynExpr(Arc::new(DivSym::new(x.clone(), y.clone())));
     }
 }
