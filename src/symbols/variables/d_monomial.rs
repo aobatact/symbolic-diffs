@@ -189,12 +189,7 @@ where
 {
     fn calc_ref(&self, v: &[T]) -> T {
         if !self.0.is_zero() {
-            /*if self.1.is_one() {
-                self.0.clone() * v[Dim::USIZE].clone()
-            } else */
-            {
-                self.0.clone() * v[self.dim()].clone().pow(self.1.clone())
-            }
+            self.0.clone() * v[self.dim()].clone().pow(self.1.clone())
         } else {
             T::zero()
         }
@@ -263,12 +258,7 @@ where
 {
     fn calc_ref(&self, v: &[T; D]) -> T {
         if !self.0.is_zero() {
-            /*if self.1.is_one() {
-                self.0.clone() * v[Dim::USIZE].clone()
-            } else */
-            {
-                self.0.clone() * v[self.dim()].clone().pow(self.1.clone())
-            }
+            self.0.clone() * v[self.dim()].clone().pow(self.1.clone())
         } else {
             T::zero()
         }

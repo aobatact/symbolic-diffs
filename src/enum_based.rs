@@ -372,7 +372,7 @@ mod tests {
 
         //compile freeze for div
         let xdy = x.clone() / y.clone();
-        assert_eq!(-(8.0/9.0), xdy.calc(v1));
+        assert_eq!(-(8.0 / 9.0), xdy.calc(v1));
 
         let _add = DynExpr::Dynamic(Arc::new(AddSym::new(x.clone(), y.clone())));
         let _sub = DynExpr::Dynamic(Arc::new(SubSym::new(x.clone(), y.clone())));
