@@ -54,34 +54,6 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     }
 }
 
-impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
-where
-    Out: Any,
-    In: ?Sized + Any,
-{
-    fn calc_ref(&self, value: &In) -> Out {
-        self.as_ref().calc_ref(value)
-    }
-    fn diff_dyn(&self, dim: usize) -> DynExpr<Out, In> {
-        self.as_ref().diff_dyn(dim)
-    }
-    fn as_any(&self) -> &(dyn Any) {
-        self
-    }
-}
-
-impl<Out, In> Symbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
-where
-    Out: Any + Zero + Clone + One + Display,
-    In: ?Sized + Any,
-{
-    type Derivative = DynExpr<Out, In>;
-    #[inline]
-    fn diff(self, dim: usize) -> DynExpr<Out, In> {
-        self.diff_dyn(dim)
-    }
-}
-
 impl<Out, In, Sym> DynamicSymbol<Out, In> for &'static Sym
 where
     Out: Any,
@@ -96,6 +68,18 @@ where
     }
     fn as_any(&self) -> &(dyn std::any::Any + 'static) {
         (*self).as_any()
+    }
+}
+
+impl<Out, In, Sym> Symbol<Out, In> for &'static Sym
+where
+    Out: Any,
+    In: ?Sized + Any,
+    Sym: Symbol<Out, In> + Any,
+{
+    type Derivative = Sym::Derivative;
+    fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
+        self.clone().diff(dm)
     }
 }
 

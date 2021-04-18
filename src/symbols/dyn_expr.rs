@@ -306,7 +306,7 @@ mod tests {
         let x: Expr<Variable, f32> = Variable.into();
         let w = Arc::new(x);
         assert_eq!(1., x.calc_ref(&1.));
-        let w = (w as Arc<dyn DynamicSymbol<f32, f32>>).to_expr();
+        let w = w.to_dyn_expr().to_expr();
         assert_eq!(1., x.calc_ref(&1.));
         let y = w.clone() + w.clone();
         assert_eq!(2., y.calc_ref(&1.));
