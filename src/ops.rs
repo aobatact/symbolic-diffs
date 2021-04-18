@@ -42,7 +42,7 @@ where
         self.sym1.calc_ref(value) + self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-        BinarySym::new_with_op(AddOp, self.sym1.diff_dyn(dm), self.sym2.diff_dyn(dm)).to_dyn_expr()
+        self.sym1.diff_dyn(dm) + self.sym2.diff_dyn(dm)
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -93,7 +93,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Sub<Output = Out> + Any + Display + One + Zero + Clone,
+    Out: Zero + Clone + One + Sub<Output = Out> + Display + Neg<Output = Out> + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -101,7 +101,7 @@ where
         self.sym1.calc_ref(value) - self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-        BinarySym::new_with_op(SubOp, self.sym1.diff_dyn(dm), self.sym2.diff_dyn(dm)).to_dyn_expr()
+        self.sym1.diff_dyn(dm) - self.sym2.diff_dyn(dm)
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -112,7 +112,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Sub<Output = Out> + Any + Zero + Clone + One + Display + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -162,8 +162,8 @@ pub type MulSym<Sym1, Sym2, Out, In> = BinarySym<MulOp, Sym1, Sym2, Out, In>;
 
 impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
-    Sym1: DynamicSymbol<Out, In> + Clone,
-    Sym2: DynamicSymbol<Out, In> + Clone,
+    Sym1: Symbol<Out, In> + Clone,
+    Sym2: Symbol<Out, In> + Clone,
     Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
     In: ?Sized + Any,
 {
@@ -172,13 +172,8 @@ where
         self.sym1.calc_ref(value) * self.sym2.calc_ref(value)
     }
     fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-        let sym2diff = self.sym2.diff_dyn(dm);
-        let df = BinarySym::new_with_op(
-            AddOp,
-            BinarySym::new_with_op(MulOp, self.sym1.diff_dyn(dm), self.sym2.clone()),
-            BinarySym::new_with_op(MulOp, self.sym1.clone(), sym2diff),
-        );
-        DynExpr::Dynamic(Arc::new(df))
+        self.sym1.diff_dyn(dm) * self.sym2.clone().to_dyn_expr()
+            + self.sym1.clone().to_dyn_expr() * self.sym2.diff_dyn(dm)
     }
     fn as_any(&self) -> &(dyn Any) {
         self
@@ -253,6 +248,7 @@ where
         + Sub<Output = Out>
         + Mul<Output = Out>
         + Div<Output = Out>
+        + Neg<Output = Out>
         + Any
         + Clone
         + Zero
@@ -322,21 +318,16 @@ where
         + Clone
         + Zero
         + One
+        + Neg<Output = Out>
         + Display,
     In: ?Sized + Any,
 {
     //type Derivative = DivSym<DynExpr<Out, In>, UnarySym<SquareOp, Sym2, Out, In>, Out, In>;
     type Derivative = DynExpr<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
-        DivSym::new(
-            SubSym::new(
-                self.sym1.clone().diff_dyn(dm) * self.sym2.clone().to_dyn_expr(),
-                self.sym1.to_dyn_expr() * self.sym2.clone().diff_dyn(dm),
-            )
-            .to_dyn_expr(),
-            UnarySym::new(self.sym2).to_dyn_expr(),
-        )
-        .to_dyn_expr()
+        (self.sym1.clone().diff_dyn(dm) * self.sym2.clone().to_dyn_expr()
+            - self.sym1.to_dyn_expr() * self.sym2.clone().diff_dyn(dm))
+            / UnarySym::new_with_op(SquareOp, self.sym2).to_dyn_expr()
     }
 }
 
@@ -358,9 +349,18 @@ macro_rules! op_expr {
 }
 
 op_expr!(Add, AddSym, add, []);
-op_expr!(Sub, SubSym, sub, []);
+op_expr!(Sub, SubSym, sub, [Neg]);
 op_expr!(Mul, MulSym, mul, [Add]);
-op_expr!(Div, DivSym, div, [Add, Sub, Mul], Clone, Zero, One, Display);
+op_expr!(
+    Div,
+    DivSym,
+    div,
+    [Add, Sub, Mul, Neg],
+    Clone,
+    Zero,
+    One,
+    Display
+);
 
 /// [`UnaryOp`] marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -449,7 +449,11 @@ where
         x.clone() * x
     }
     fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-        self.clone().diff(dm).to_dyn_expr()
+        let one = Out::one();
+        let two = one.clone() + one;
+        Const::from(two).to_dyn_expr()
+            * self.sym.clone().diff_dyn(dm)
+            * self.sym.clone().to_dyn_expr()
     }
     fn as_any(&self) -> &(dyn Any) {
         self
