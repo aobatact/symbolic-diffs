@@ -218,7 +218,7 @@ impl BinaryOp for PowOp {}
 impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
 where
     Sym1: UnaryFloatSymbolEx<Out, In>,
-    Sym2: SymbolEx<Out, In>,
+    Sym2: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
     In: ?Sized + Any,
 {
@@ -241,7 +241,7 @@ where
 impl<Sym1, Sym2, Out, In> Symbol<Out, In> for BinarySym<PowOp, Sym1, Sym2, Out, In>
 where
     Sym1: UnaryFloatSymbolEx<Out, In>,
-    Sym2: SymbolEx<Out, In>,
+    Sym2: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
     In: ?Sized + Any,
 {

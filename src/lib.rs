@@ -6,13 +6,12 @@ use std::fmt;
 use std::sync::Arc;
 
 mod display;
-//#[doc(hidden)]
-mod dynamic;
 mod enum_based;
 pub mod float_ops;
 pub mod ops;
 pub mod symbols;
 
+pub use enum_based::DynExpr;
 pub use float_ops::{ExNumConsts, ExNumOps};
 pub use symbols::variables::*;
 
@@ -46,10 +45,6 @@ pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     {
         self.calc_ref(&value)
     }
-}
-
-///Extention for [`Symbol`](`crate::Symbol`).
-pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
     ///Wrap this symbol to [`Expr`](`crate::Expr`)
     fn to_expr(self) -> Expr<Self, Out, In> {
         self.into()
@@ -57,11 +52,9 @@ pub trait SymbolEx<Out, In: ?Sized>: Symbol<Out, In> {
 
     ///Wrap this symbol to [`DynExpr`]
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
-        DynExpr(Arc::new(self))
+        DynExpr::Dynamic(Arc::new(self))
     }
 }
-
-impl<Sym: Symbol<O, I>, O, I: ?Sized> SymbolEx<O, I> for Sym {}
 
 impl<Out, In> DynamicSymbol<Out, In> for Arc<dyn DynamicSymbol<Out, In>>
 where
@@ -108,7 +101,7 @@ where
     }
 }
 
-pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
+//pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
 /// We currently needs this because of the restriction around specialization.
