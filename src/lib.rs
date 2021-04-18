@@ -5,7 +5,6 @@ use num_traits::{One, Pow, Zero};
 use std::fmt;
 use std::sync::Arc;
 
-mod display;
 mod enum_based;
 pub mod float_ops;
 pub mod ops;
@@ -179,5 +178,29 @@ where
 
     fn as_any(&self) -> &(dyn Any) {
         self
+    }
+}
+
+impl<Sym: Symbol<Out, In>, Out, In: ?Sized> Display for Expr<Sym, Out, In> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        self.0.fmt(f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    #[test]
+    fn diplay_test() {
+        let x: Expr<Variable, f32> = Variable.into();
+        assert_eq!("x", x.to_string());
+        let x1 = x + Const(1.);
+        assert_eq!("x + 1", x1.to_string());
+        let exp = x.exp();
+        assert_eq!("exp( x)", exp.to_string());
+        let exp1 = x1.exp();
+        assert_eq!("exp( x + 1)", exp1.to_string());
+        let xexp = x * exp;
+        assert_eq!("(x)(exp( x))", xexp.to_string());
     }
 }

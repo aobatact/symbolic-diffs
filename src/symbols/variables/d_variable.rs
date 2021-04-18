@@ -57,6 +57,12 @@ where
     }
 }
 
+impl<Dim: DimMarker> Display for DimVariable<Dim> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_fmt(format_args!("x_{}", self.dim()))
+    }
+}
+
 impl<Dim: DimMarker + Default> From<Variable> for DimVariable<Dim> {
     fn from(_: Variable) -> Self {
         DimVariable::new()

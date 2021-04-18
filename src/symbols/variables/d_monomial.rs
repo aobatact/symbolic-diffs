@@ -71,6 +71,19 @@ where
     }
 }
 
+impl<Dim: DimMarker, Coefficient: Display + From<Degree>, Degree: Clone> Display
+    for DimMonomial<Dim, Coefficient, Degree>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_fmt(format_args!(
+            "{} x_{}^{}",
+            self.0,
+            self.dim(),
+            Coefficient::from(self.1.clone())
+        ))
+    }
+}
+
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where

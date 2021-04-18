@@ -258,6 +258,30 @@ where
     }
 }
 
+impl Display for ZeroSym {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("0")
+    }
+}
+
+impl Display for OneSym {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("1")
+    }
+}
+
+impl<T: Display> Display for Const<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        self.0.fmt(f)
+    }
+}
+
+impl Display for Variable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        f.write_str("x")
+    }
+}
+
 #[cfg(test)]
 #[cfg(feature = "typenum")]
 mod test {
