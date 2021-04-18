@@ -91,6 +91,23 @@ where
     }
 }
 
+impl<Out, In, Sym> DynamicSymbol<Out, In> for &'static Sym
+where
+    Out: Any,
+    In: ?Sized + Any,
+    Sym: DynamicSymbol<Out, In> + Any,
+{
+    fn calc_ref(&self, i: &In) -> Out {
+        (*self).calc_ref(i)
+    }
+    fn diff_dyn(&self, d: usize) -> Arc<(dyn DynamicSymbol<Out, In>)> {
+        (*self).diff_dyn(d)
+    }
+    fn as_any(&self) -> &(dyn std::any::Any + 'static) {
+        (*self).as_any()
+    }
+}
+
 pub struct DynExpr<Out, In: ?Sized>(pub(crate) Arc<dyn DynamicSymbol<Out, In>>);
 
 ///Wrapper for [`Symbol`](`crate::Symbol`) for some operation.
