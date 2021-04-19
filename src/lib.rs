@@ -83,8 +83,8 @@ where
     }
 }
 
-pub trait DynamicOut : Any + Clone + Display + Zero + One {}
-impl<T : Any + Clone + Display + Zero + One> DynamicOut for T {}
+pub trait DynamicOut: Clone + Display + Zero + One {}
+impl<T: Clone + Display + Zero + One> DynamicOut for T {}
 
 #[cfg(test)]
 mod tests {

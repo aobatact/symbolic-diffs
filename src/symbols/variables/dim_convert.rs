@@ -1,12 +1,7 @@
-use crate::DimMarker;
-use crate::DynExpr;
-use crate::DynamicSymbol;
-use crate::One;
-use crate::Symbol;
+use crate::*;
 use core::any::Any;
 use core::fmt::Display;
 use core::marker::PhantomData;
-use num_traits::Zero;
 use std::sync::Arc;
 
 pub struct DimConverter<Sym, Fc, Fd, In2>(Sym, Fc, Fd, PhantomData<In2>);
@@ -28,7 +23,7 @@ where
     Sym: DynamicSymbol<Out, In2> + Any,
     F: Fn(&In1) -> In2 + Any + Clone,
     Fd: Fn(usize) -> usize + Clone + Any + Clone,
-    Out: Any + Clone + Zero + One + Display,
+    Out: DynamicOut + Any,
     In2: Any,
 {
     fn calc_ref(&self, i: &In1) -> Out {
@@ -43,7 +38,7 @@ where
         )))
     }
     fn as_any(&self) -> &(dyn Any) {
-        todo!()
+        self
     }
 }
 
@@ -52,11 +47,16 @@ where
     Sym: Symbol<Out, In2> + Any + Clone,
     F: Fn(&In1) -> In2 + Any + Clone,
     Fd: Fn(usize) -> usize + Clone + Any,
-    Out: Any + Clone + Zero + One + Display,
+    Out: DynamicOut + Any,
     In2: Any,
 {
     type Derivative = DimConverter<Sym::Derivative, F, Fd, In2>;
     fn diff(self, dm: usize) -> Self::Derivative {
-        todo!()
+        DimConverter(
+            self.0.diff(self.2(dm)),
+            self.1.clone(),
+            self.2.clone(),
+            PhantomData,
+        )
     }
 }

@@ -34,7 +34,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Add<Output = Out> + Any + Zero + One + Clone + Display,
+    Out: Add<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -53,7 +53,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Any + Zero + One + Clone + Display,
+    Out: Add<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -93,7 +93,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Zero + Clone + One + Sub<Output = Out> + Display + Neg<Output = Out> + Any,
+    Out: DynamicOut + Any + Sub<Output = Out> + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     #[inline]
@@ -112,7 +112,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + Any + Zero + Clone + One + Display + Neg<Output = Out>,
+    Out: Sub<Output = Out> + DynamicOut + Any + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -164,7 +164,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In> + Clone,
     Sym2: Symbol<Out, In> + Clone,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -184,7 +184,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<
@@ -249,11 +249,8 @@ where
         + Mul<Output = Out>
         + Div<Output = Out>
         + Neg<Output = Out>
-        + Any
-        + Clone
-        + Zero
-        + One
-        + Display,
+        + DynamicOut
+        + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -314,12 +311,9 @@ where
         + Sub<Output = Out>
         + Mul<Output = Out>
         + Div<Output = Out>
+        + DynamicOut
         + Any
-        + Clone
-        + Zero
-        + One
-        + Neg<Output = Out>
-        + Display,
+        + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     //type Derivative = DivSym<DynExpr<Out, In>, UnarySym<SquareOp, Sym2, Out, In>, Out, In>;
@@ -441,7 +435,7 @@ pub type SquareSym<Sym, Out, In> = UnarySym<SquareOp, Sym, Out, In>;
 impl<Sym, Out, In> DynamicSymbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     fn calc_ref(&self, value: &In) -> Out {
@@ -463,7 +457,7 @@ where
 impl<Sym, Out, In> Symbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
@@ -477,7 +471,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
@@ -567,7 +561,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     pub fn pow_t<Exp>(self, r: Exp) -> Expr<UnarySym<UnaryPowOp<Exp>, Sym, Out, In>, Out, In>

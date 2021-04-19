@@ -97,7 +97,7 @@ where
 impl<Out, In: ?Sized> Add for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display,
+    Out: DynamicOut + Add<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn add(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -117,7 +117,7 @@ where
 impl<Out: Display + Add<Output = Out>, In: ?Sized> Zero for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display,
+    Out: DynamicOut + Add<Output = Out>,
 {
     fn zero() -> Self {
         DynExpr::One
@@ -134,7 +134,7 @@ where
 impl<Out, In: ?Sized> Sub for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Sub<Output = Out> + Display + Neg<Output = Out>,
+    Out: DynamicOut + Sub<Output = Out> + Neg<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn sub(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -154,7 +154,7 @@ where
 impl<Out, In: ?Sized> Neg for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Neg<Output = Out> + Display,
+    Out: DynamicOut + Neg<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn neg(self) -> DynExpr<Out, In> {
@@ -170,7 +170,7 @@ where
 impl<Out, In: ?Sized> Mul for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display + Mul<Output = Out>,
+    Out: DynamicOut + Add<Output = Out> + Mul<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn mul(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -188,7 +188,7 @@ where
 impl<Out, In: ?Sized> One for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display + Mul<Output = Out>,
+    Out: DynamicOut + Add<Output = Out> + Mul<Output = Out>,
 {
     fn one() -> Self {
         DynExpr::One
@@ -204,11 +204,8 @@ where
 impl<Out, In: ?Sized> Div for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero
-        + Clone
-        + One
+    Out: DynamicOut
         + Sub<Output = Out>
-        + Display
         + Neg<Output = Out>
         + Add<Output = Out>
         + Mul<Output = Out>
@@ -246,14 +243,14 @@ macro_rules! as_dyn_expr {
 
 impl<Out, In> ExNumConsts for DynExpr<Out, In>
 where
-    Out: ExNumConsts + Any + Clone + Zero + Display,
+    Out: ExNumConsts + Any + DynamicOut,
 {
     as_dyn_expr!(c e, ln_10, ln_2, log10_e, log10_2, log2_e, log2_10, two);
 }
 
 impl<Out, In> ExNumOps for DynExpr<Out, In>
 where
-    Out: ExNumOps + Any + Clone + Zero + Display,
+    Out: ExNumOps + DynamicOut + Any,
     In: Any + std::clone::Clone,
 {
     as_dyn_expr!(f exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, recip, exp_m1, exp2, ln_1p, log2, log10,);
@@ -261,15 +258,7 @@ where
 
 impl<Out, In> Pow<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: ExNumOps
-        + Add<Output = Out>
-        + Mul<Output = Out>
-        + Pow<Out, Output = Out>
-        + Clone
-        + Any
-        + Zero
-        + One
-        + Default,
+    Out: ExNumOps + Pow<Out, Output = Out> + Any + Default,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
