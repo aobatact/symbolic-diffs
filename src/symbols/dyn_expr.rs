@@ -87,10 +87,7 @@ where
 {
     type Derivative = DynExpr<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
-        match self {
-            DynExpr::Zero | DynExpr::One | DynExpr::Const(_) => DynExpr::Zero,
-            DynExpr::Dynamic(d) => d.diff_dyn(dm).to_dyn_expr(),
-        }
+        self.diff_dyn(dm)
     }
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
         self

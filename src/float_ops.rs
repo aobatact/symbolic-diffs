@@ -270,7 +270,7 @@ where
 }
 
 #[cfg(test)]
-#[cfg(generic_array)]
+#[cfg(feature = "typenum")]
 mod tests {
     use crate::float_ops::*;
     //use crate::*;
@@ -281,8 +281,8 @@ mod tests {
     fn exp() {
         let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
         let y = x.exp();
-        let v = arr![f32; 1., 1.];
-        let v1 = arr![f32; 2., 3.];
+        let v = [1., 1.];
+        let v1 = [2., 3.];
         assert_eq!(2.0_f32.exp(), y.calc(v));
         assert_eq!(4.0_f32.exp(), y.calc(v1));
         assert_eq!(2.0_f32.exp() * 2.0, y.clone().diff(0).calc(v));
@@ -291,8 +291,8 @@ mod tests {
 
     #[test]
     fn sincos() {
-        let v = arr![f32; 1., 1.];
-        let v1 = arr![f32; 2., 3.];
+        let v = [1., 1.];
+        let v1 = [2., 3.];
         let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
         let xsin = x.sin();
         let xcos = x.cos();
@@ -304,5 +304,15 @@ mod tests {
         assert_eq!(2.0 * xcos.calc(v1), xsin.clone().diff(0).calc(v1));
         assert_eq!(-2.0 * xsin.calc(v), xcos.clone().diff(0).calc(v));
         assert_eq!(-2.0 * xsin.calc(v1), xcos.diff(0).calc(v1));
+    }
+
+    #[test]
+    fn sqrt() {
+        let v = [1., 1.];
+        let v1 = [2., 3.];
+        let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
+        let xsqrt = x.sqrt();
+        assert_eq!(2.0_f32.sqrt(), xsqrt.calc(v));
+        assert_eq!(2.0_f32.sqrt() / 2.0, xsqrt.diff(0).calc(v));
     }
 }

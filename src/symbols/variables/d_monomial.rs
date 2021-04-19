@@ -145,7 +145,7 @@ where
         + From<Degree>
         + Any
         + Display,
-    Dim: IsLess<N> + Any + Unsigned,
+    Dim: IsLess<N> + Any + Unsigned + variables::DimMarker,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,

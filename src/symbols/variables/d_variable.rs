@@ -143,7 +143,7 @@ where
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
     T: Clone + Zero + One + Display + Any,
-    Dim: Unsigned + IsLess<N> + Any,
+    Dim: Unsigned + IsLess<N> + Any + variables::DimMarker,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {

@@ -6,17 +6,19 @@ pub use d_monomial::*;
 pub use d_variable::*;
 use num_traits::{One, Zero};
 #[cfg(feature = "typenum")]
-use typenum::marker_traits::Unsigned;
+use typenum::uint::{UInt, UTerm, Unsigned};
+use typenum::Bit;
 
 mod d_monomial;
 mod d_variable;
+mod dim_convert;
 
 /// Dimension marker. Use this to mark the variables dimension.
 /// ```
 /// # use typenum;
-/// let dim1 = symbolic_diffs::Dim::<0>;
-/// let dim2 = typenum::U1::new();
-/// let dim3 = symbolic_diffs::DimWrap(2);
+/// let dim1 = symbolic_diffs::Dim::<0>;//zst
+/// let dim2 = typenum::U1::new();//zst
+/// let dim3 = 2_usize;
 /// ```
 pub trait DimMarker: Copy {
     fn dim(self) -> usize;
@@ -33,19 +35,21 @@ impl<const DM: usize> DimMarker for Dim<DM> {
 }
 
 #[cfg(feature = "typenum")]
-impl<T: Unsigned> DimMarker for T {
+impl<U: Unsigned, B: Bit> DimMarker for UInt<U, B> {
     fn dim(self) -> usize {
-        T::USIZE
+        UInt::<U, B>::USIZE
+    }
+}
+#[cfg(feature = "typenum")]
+impl DimMarker for UTerm {
+    fn dim(self) -> usize {
+        UTerm::USIZE
     }
 }
 
-/// Dimention marker using value. This is not ZST.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DimWrap(pub usize);
-
-impl DimMarker for DimWrap {
+impl DimMarker for usize {
     fn dim(self) -> usize {
-        self.0
+        self
     }
 }
 
