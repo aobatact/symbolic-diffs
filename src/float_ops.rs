@@ -13,7 +13,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any + Display{
+                                Neg<Output = Self> + ExNumConsts + DynamicOut + Any{
             $(
                 fn $m(self) -> Self;
             )*
@@ -117,8 +117,6 @@ macro_rules! FlaotSymbols {
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
-                    //let x : UnarySym<$op, Sym, Out, In> = self.inner().into();
-                    //x.to_expr()
                     self.inner().$me().into()
                 }
             )*
@@ -291,8 +289,6 @@ where
 #[cfg(feature = "typenum")]
 mod tests {
     use crate::float_ops::*;
-    //use crate::*;
-    use generic_array::*;
     use typenum::*;
 
     #[test]

@@ -13,12 +13,12 @@ pub trait UnaryOp {
     }
 
     ///Formats the expression to display.
-    fn format_expression(
+    fn format_expression<Out, In: ?Sized>(
         f: &mut fmt::Formatter<'_>,
-        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        inner: &impl DynamicSymbol<Out, In>,
     ) -> Result<(), fmt::Error> {
         f.write_fmt(format_args!("{}( ", Self::op_name()))?;
-        inner(f)?;
+        inner.fmt(f)?;
         f.write_str(")")
     }
 }
@@ -106,6 +106,6 @@ impl<Op: UnaryOp, Sym: DynamicSymbol<Out, In>, Out, In: ?Sized> Display
     for UnarySym<Op, Sym, Out, In>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
-        Op::format_expression(f, |f| self.sym.fmt(f))
+        Op::format_expression(f, &self.sym)
     }
 }

@@ -17,6 +17,10 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
         DynExpr::Const(Const(v))
     }
 
+    pub fn dynamic(v: impl DynamicSymbol<Out, In>) -> Self {
+        DynExpr::Dynamic(Arc::new(v))
+    }
+
     pub fn is_dynamic(&self) -> bool {
         if let DynExpr::Dynamic(_) = self {
             true
@@ -38,22 +42,19 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
 
 impl<Out: DynamicOut + Any> DynExpr<Out, Out> {
     pub fn variable<Dim: DimMarker + Any>(d: Dim) -> Self {
-        let v = DimVariable::with_dimension(d);
-        DynExpr::Dynamic(Arc::new(v))
+        DynExpr::dynamic(DimVariable::with_dimension(d))
     }
 }
 
 impl<Out: DynamicOut + Any> DynExpr<Out, [Out]> {
     pub fn variable_slice<Dim: DimMarker + Any>(d: Dim) -> Self {
-        let v = DimVariable::with_dimension(d);
-        DynExpr::Dynamic(Arc::new(v))
+        DynExpr::dynamic(DimVariable::with_dimension(d))
     }
 }
 
 impl<Out: DynamicOut + Any, const N: usize> DynExpr<Out, [Out; N]> {
     pub fn variable_array<Dim: DimMarker + Any>(d: Dim) -> Self {
-        let v = DimVariable::with_dimension(d);
-        DynExpr::Dynamic(Arc::new(v))
+        DynExpr::dynamic(DimVariable::with_dimension(d))
     }
 }
 
@@ -160,7 +161,7 @@ where
     }
 }
 
-impl<Out: Display + Add<Output = Out>, In: ?Sized> Zero for DynExpr<Out, In>
+impl<Out, In: ?Sized> Zero for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: DynamicOut + Add<Output = Out>,
@@ -192,7 +193,7 @@ where
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 - c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(SubSym::new(l, r))),
+            (l, r) => SubSym::new(l, r).to_dyn_expr(),
         }
     }
 }
@@ -208,7 +209,7 @@ where
             DynExpr::Zero => DynExpr::Zero,
             DynExpr::One => DynExpr::Const(Const(-Out::one())),
             DynExpr::Const(Const(c)) => DynExpr::Const(Const(-c)),
-            x => DynExpr::Dynamic(Arc::new(NegSym::new(x))),
+            x => NegSym::new(x).to_dyn_expr(),
         }
     }
 }
@@ -226,7 +227,7 @@ where
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 * c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(MulSym::new(l, r))),
+            (l, r) => MulSym::new(l, r).to_dyn_expr(),
         }
     }
 }

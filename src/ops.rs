@@ -331,7 +331,7 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + Zero + Clone + One + Display,
+            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + DynamicOut,
             I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
@@ -345,27 +345,18 @@ macro_rules! op_expr {
 op_expr!(Add, AddSym, add, []);
 op_expr!(Sub, SubSym, sub, [Neg]);
 op_expr!(Mul, MulSym, mul, [Add]);
-op_expr!(
-    Div,
-    DivSym,
-    div,
-    [Add, Sub, Mul, Neg],
-    Clone,
-    Zero,
-    One,
-    Display
-);
+op_expr!(Div, DivSym, div, [Add, Sub, Mul, Neg]);
 
 /// [`UnaryOp`] marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct NegOp;
 impl UnaryOp for NegOp {
-    fn format_expression(
+    fn format_expression<Out, In: ?Sized>(
         f: &mut fmt::Formatter<'_>,
-        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        inner: &impl DynamicSymbol<Out, In>,
     ) -> Result<(), fmt::Error> {
         f.write_str("-(")?;
-        inner(f)?;
+        inner.fmt(f)?;
         f.write_str(")")
     }
 }
