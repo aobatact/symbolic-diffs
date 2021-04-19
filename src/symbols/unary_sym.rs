@@ -59,6 +59,18 @@ where
     }
 }
 
+impl<Op, Sym, Out, In: ?Sized> UnarySym<Op, Sym, Out, In>
+where
+    Op: UnaryOp,
+    Sym: Symbol<Out, In>,
+    Out: DynamicOut + Any,
+    In: Any,
+{
+    fn inner_dyn(self) -> UnarySym<Op, DynExpr<Out, In>, Out, In> {
+        UnarySym::new_with_op(self.op, self.sym.to_dyn_expr())
+    }
+}
+
 impl<Op, Sym, Out, In: ?Sized> Clone for UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp + Clone,

@@ -136,6 +136,22 @@ macro_rules! FloatOps {
             }
         }
 
+        impl<Sym, Out, In> UnarySym<$op, Sym, Out, In>
+        where
+            Sym: Symbol<Out, In>,
+            Out: ExNumOps
+                + Add<Output = Out>
+                + Sub<Output = Out>
+                + Mul<Output = Out>
+                + Div<Output = Out>,
+            In: ?Sized + Any,
+        {
+            #[inline]
+            fn op_dif(self) -> impl Symbol<Out, In> {
+                $ex(self)
+            }
+        }
+
         impl<Sym, Out, In> Symbol<Out, In> for UnarySym<$op, Sym, Out, In>
         where
             Sym: Symbol<Out, In>,
@@ -149,7 +165,7 @@ macro_rules! FloatOps {
             type Derivative = impl Symbol<Out, In>;
             fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
                 let df = self.sym.clone().diff(dm).to_expr();
-                let y = $ex(self);
+                let y = self.op_dif();
                 df * y
             }
         }
@@ -169,7 +185,9 @@ macro_rules! FloatOps {
                 inner.$me()
             }
             fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-                self.clone().diff(dm).to_dyn_expr()
+                let df = self.sym.clone().diff(dm).to_dyn_expr();
+                let y = self.clone().op_dif();
+                df * y.to_dyn_expr()
             }
             fn as_any(&self) -> &(dyn Any) {
                 self

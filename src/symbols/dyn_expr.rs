@@ -13,12 +13,47 @@ pub enum DynExpr<Out, In: ?Sized> {
 }
 
 impl<Out, In: ?Sized> DynExpr<Out, In> {
+    pub fn constant(v: Out) -> Self {
+        DynExpr::Const(Const(v))
+    }
+
     pub fn is_dynamic(&self) -> bool {
         if let DynExpr::Dynamic(_) = self {
             true
         } else {
             false
         }
+    }
+
+    pub fn downcast<T>(&self) -> Option<&T>
+    where
+        T: Any,
+    {
+        match self {
+            DynExpr::Dynamic(d) => d.as_ref().as_any().downcast_ref::<T>(),
+            _ => None,
+        }
+    }
+}
+
+impl<Out: DynamicOut + Any> DynExpr<Out, Out> {
+    pub fn variable<Dim: DimMarker + Any>(d: Dim) -> Self {
+        let v = DimVariable::with_dimension(d);
+        DynExpr::Dynamic(Arc::new(v))
+    }
+}
+
+impl<Out: DynamicOut + Any> DynExpr<Out, [Out]> {
+    pub fn variable_slice<Dim: DimMarker + Any>(d: Dim) -> Self {
+        let v = DimVariable::with_dimension(d);
+        DynExpr::Dynamic(Arc::new(v))
+    }
+}
+
+impl<Out: DynamicOut + Any, const N: usize> DynExpr<Out, [Out; N]> {
+    pub fn variable_array<Dim: DimMarker + Any>(d: Dim) -> Self {
+        let v = DimVariable::with_dimension(d);
+        DynExpr::Dynamic(Arc::new(v))
     }
 }
 
@@ -111,13 +146,16 @@ where
     fn add(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
         match (self, e) {
             (DynExpr::Zero, x) | (x, DynExpr::Zero) => x,
+            (DynExpr::One, DynExpr::One) => DynExpr::Const(Const(Out::one() + Out::one())),
             (DynExpr::One, DynExpr::Const(Const(c))) | (DynExpr::Const(Const(c)), DynExpr::One) => {
                 DynExpr::Const(Const(c + Out::one()))
             }
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 + c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(AddSym::new(l, r))),
+            (l, DynExpr::One) => DynExpr::One + l,
+            (l, DynExpr::Const(Const(c2))) => DynExpr::Const(Const(c2)) + l,
+            (l, r) => AddSym::new(l, r).to_dyn_expr(),
         }
     }
 }
@@ -408,5 +446,15 @@ mod tests {
         assert_eq!(24., xy.calc(v1));
         assert_eq!(8., xy.clone().diff(0).calc(v1));
         assert_eq!(-8., xy.diff(1).calc(v1));
+    }
+
+    #[cfg(feature = "typenum")]
+    #[test]
+    fn nested() {
+        let dv = DynExpr::variable(U0::default());
+        let fx = DynExpr::variable(U0::default());
+        let fx3 = fx * DynExpr::constant(DynExpr::constant(3.0));
+        let dv3 = fx3.calc(dv);
+        assert_eq!(3.0, dv3.calc(1.0));
     }
 }
