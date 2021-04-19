@@ -309,7 +309,6 @@ mod tests {
     #[test]
     fn sqrt() {
         let v = [1., 1.];
-        let v1 = [2., 3.];
         let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
         let xsqrt = x.sqrt();
         assert_eq!(2.0_f32.sqrt(), xsqrt.calc(v));

@@ -542,21 +542,6 @@ where
     }
 }
 
-/*
-//needs specialization
-impl<L, R, Out, In> Pow<R> for Expr<L, Out, In>
-where
-    L: Symbol<Out, In>,
-    R: Sub<Output = R> + One + Clone,
-    Out: ExNumOps + Pow<R, Output = Out> + Clone,
-{
-    type Output = Expr<UnarySym<UnaryPowOp<R>, L, Out, In>, Out, In>;
-    fn pow(self, r: R) -> Self::Output {
-        UnarySym::new_with_op(UnaryPowOp(r), self.0).to_expr()
-    }
-}
-*/
-
 /// Operation for pow
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where

@@ -12,6 +12,16 @@ pub enum DynExpr<Out, In: ?Sized> {
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
 
+impl<Out, In: ?Sized> DynExpr<Out, In> {
+    pub fn is_dynamic(&self) -> bool {
+        if let DynExpr::Dynamic(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
 impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
     fn clone(&self) -> Self {
         match self {
@@ -57,7 +67,7 @@ impl<Out, In: ?Sized> Default for DynExpr<Out, In> {
 impl<Out, In: ?Sized> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any,
-    Out: Zero + Clone + One + Display,
+    Out: DynamicOut,
 {
     fn calc_ref(&self, i: &In) -> Out {
         match self {
@@ -69,9 +79,7 @@ where
     }
     fn diff_dyn(&self, d: usize) -> DynExpr<Out, In> {
         match self {
-            DynExpr::Zero => DynExpr::Zero,
-            DynExpr::One => DynExpr::Zero,
-            DynExpr::Const(_) => DynExpr::Zero,
+            DynExpr::Zero | DynExpr::One | DynExpr::Const(_) => DynExpr::Zero,
             DynExpr::Dynamic(dy) => dy.diff_dyn(d),
         }
     }
@@ -83,7 +91,7 @@ where
 impl<Out, In: ?Sized> Symbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Display,
+    Out: DynamicOut,
 {
     type Derivative = DynExpr<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {

@@ -145,6 +145,7 @@ where
 /// assert_eq!(3,x.calc(6));
 /// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Const<T>(pub T);
 impl<Out, In> DynamicSymbol<Out, In> for Const<Out>
 where

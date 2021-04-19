@@ -139,6 +139,32 @@ where
     }
 }
 
+impl<Dim, T> DynamicSymbol<T, (usize, T)> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: DimMarker + Any,
+{
+    fn calc_ref(&self, v: &(usize, T)) -> T {
+        if self.dim() == v.0 {
+            v.1.clone()
+        } else {
+            T::zero()
+        }
+    }
+
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, (usize, T)> {
+        if dm == self.0.dim() {
+            DynExpr::One
+        } else {
+            DynExpr::Zero
+        }
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
