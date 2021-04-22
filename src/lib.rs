@@ -5,11 +5,10 @@ use num_traits::{One, Pow, Zero};
 use std::fmt;
 use std::sync::Arc;
 
-pub mod float_ops;
 pub mod ops;
 pub mod symbols;
 
-pub use float_ops::{ExNumConsts, ExNumOps};
+pub use ops::float_ops::{ExNumConsts, ExNumOps};
 pub(crate) use symbols::Expr;
 pub use symbols::*;
 
@@ -30,7 +29,7 @@ pub trait DynamicSymbol<Out, In: ?Sized = Out>: Any + Display {
 pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     /// return type for `diff`
     type Derivative: Symbol<Out, In>;
-    /// Get the partial derivative of this expression.
+    /// Staticaly gets the partial derivative of this expression.
     /// Dm is the marker of which variable for differentiation.
     /// Use usize 0 if there is only one variable.
     fn diff(self, dm: usize) -> Self::Derivative;

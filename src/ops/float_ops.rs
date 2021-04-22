@@ -9,24 +9,6 @@ use core::ops::{Add, Div, Mul, Neg, Sub};
 use num_complex::{Complex32, Complex64};
 use num_traits::{float::FloatConst, pow::Pow};
 
-pub trait BasicNumOps:
-    Add<Output = Self>
-    + Sub<Output = Self>
-    + Mul<Output = Self>
-    + Div<Output = Self>
-    + Neg<Output = Self>
-    + DynamicOut
-{
-}
-impl<T> BasicNumOps for T where
-    T: Add<Output = Self>
-        + Sub<Output = Self>
-        + Mul<Output = Self>
-        + Div<Output = Self>
-        + Neg<Output = Self>
-        + DynamicOut
-{
-}
 macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
@@ -306,7 +288,7 @@ where
 #[cfg(test)]
 #[cfg(feature = "typenum")]
 mod tests {
-    use crate::float_ops::*;
+    use crate::ops::float_ops::*;
     use typenum::*;
 
     #[test]

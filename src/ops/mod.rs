@@ -3,6 +3,26 @@
 use super::*;
 use crate::symbols::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
+pub mod float_ops;
+
+pub trait BasicNumOps:
+    Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + Neg<Output = Self>
+    + DynamicOut
+{
+}
+impl<T> BasicNumOps for T where
+    T: Add<Output = Self>
+        + Sub<Output = Self>
+        + Mul<Output = Self>
+        + Div<Output = Self>
+        + Neg<Output = Self>
+        + DynamicOut
+{
+}
 
 /// [`BinaryOp`] marker for [`+`](`core::ops::Add`) with [`AddSym`](`crate::ops::AddSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]

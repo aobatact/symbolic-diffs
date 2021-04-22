@@ -1,6 +1,6 @@
 //! wip
 
-use crate::float_ops::*;
+use crate::ops::float_ops::*;
 use crate::ops::*;
 use crate::symbols::*;
 use core::ops::{Add, Div, Mul, Neg, Sub};
