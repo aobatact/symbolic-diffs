@@ -1,7 +1,7 @@
 //! Set of symbols for node in expression.
 
 mod binary_sym;
-mod enum_based;
+pub(crate) mod enum_based;
 mod unary_sym;
 pub mod variables;
 
