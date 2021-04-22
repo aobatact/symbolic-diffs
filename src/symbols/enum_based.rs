@@ -6,8 +6,8 @@ pub enum EExpr<Out, In: ?Sized = Out> {
     One,
     Const(Out),
     Variable(usize),
-    Unary(UnarySym<UnaryOpSet, Box<EExpr<Out, In>>, Out, In>),
-    Binary(BinarySym<BinaryOpSet, Box<EExpr<Out, In>>, Box<EExpr<Out, In>>, Out, In>),
+    Unary(UnarySym<UnaryOpSet, Arc<EExpr<Out, In>>, Out, In>),
+    Binary(BinarySym<BinaryOpSet, Arc<EExpr<Out, In>>, Arc<EExpr<Out, In>>, Out, In>),
     Dyn(DynExpr<Out, In>),
 }
 
@@ -68,7 +68,7 @@ where
     }
 }
 
-impl<Out, In, S> DynamicSymbol<Out, In> for Box<S>
+impl<Out, In, S> DynamicSymbol<Out, In> for Arc<S>
 where
     Out: DynamicOut + Any,
     In: Any + ?Sized,
@@ -85,14 +85,14 @@ where
     }
 }
 
-impl<Out, In, S> Symbol<Out, In> for Box<S>
+impl<Out, In, S> Symbol<Out, In> for Arc<S>
 where
     Out: DynamicOut + Any,
     In: Any + ?Sized,
     S: Symbol<Out, In>,
 {
-    type Derivative = Box<S::Derivative>;
+    type Derivative = Arc<S::Derivative>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
-        Box::new((*self).diff(dm))
+        Arc::new((*self).clone().diff(dm))
     }
 }

@@ -254,7 +254,13 @@ pub mod ops_set {
             }
         }
         fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-            todo!()
+            match &self.op {
+                UnaryOpSet::Neg => UnarySym::new_with_op(NegOp, self.sym.clone()).diff_dyn(dm),
+                UnaryOpSet::Square => {
+                    UnarySym::new_with_op(SquareOp, self.sym.clone()).diff_dyn(dm)
+                }
+                UnaryOpSet::FloatOp(fop) => todo!(),
+            }
         }
         fn as_any(&self) -> &(dyn std::any::Any) {
             todo!()

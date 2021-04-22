@@ -9,6 +9,7 @@ pub enum DynExpr<Out, In: ?Sized> {
     Zero,
     One,
     Const(Const<Out>),
+    //Variable(usize),
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
 
@@ -40,23 +41,13 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
     }
 }
 
-impl<Out: DynamicOut + Any> DynExpr<Out, Out> {
+/*
+impl<Out: DynamicOut + Any, In : ?Sized> DynExpr<Out, In> {
     pub fn variable<Dim: DimMarker + Any>(d: Dim) -> Self {
-        DynExpr::dynamic(DimVariable::with_dimension(d))
+        DynExpr::Variable(d.dim())
     }
 }
-
-impl<Out: DynamicOut + Any> DynExpr<Out, [Out]> {
-    pub fn variable_slice<Dim: DimMarker + Any>(d: Dim) -> Self {
-        DynExpr::dynamic(DimVariable::with_dimension(d))
-    }
-}
-
-impl<Out: DynamicOut + Any, const N: usize> DynExpr<Out, [Out; N]> {
-    pub fn variable_array<Dim: DimMarker + Any>(d: Dim) -> Self {
-        DynExpr::dynamic(DimVariable::with_dimension(d))
-    }
-}
+*/
 
 impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
     fn clone(&self) -> Self {
@@ -64,6 +55,7 @@ impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
             DynExpr::Zero => DynExpr::Zero,
             DynExpr::One => DynExpr::One,
             DynExpr::Const(c) => DynExpr::Const(c.clone()),
+            //DynExpr::Variable(v) => DynExpr::Variable(*v),
             DynExpr::Dynamic(d) => DynExpr::Dynamic(d.clone()),
         }
     }
@@ -89,6 +81,7 @@ impl<Out: Display, In: ?Sized> Display for DynExpr<Out, In> {
             DynExpr::Zero => ZeroSym.fmt(fmt),
             DynExpr::One => OneSym.fmt(fmt),
             DynExpr::Const(c) => c.fmt(fmt),
+            //DynExpr::Variable(v) => DimVariable::with_dimension(*v).fmt(fmt),
             DynExpr::Dynamic(d) => d.fmt(fmt),
         }
     }
@@ -110,6 +103,7 @@ where
             DynExpr::Zero => Out::zero(),
             DynExpr::One => Out::one(),
             DynExpr::Const(Const(c)) => c.clone(),
+            //DynExpr::Variable(v) => DimVariable::with_dimension(*v).calc_ref(i),
             DynExpr::Dynamic(d) => d.calc_ref(i),
         }
     }
@@ -449,6 +443,7 @@ mod tests {
     }
 
     #[cfg(feature = "typenum")]
+    #[cfg(feature = "__false__")]
     #[test]
     fn nested() {
         let dv = DynExpr::variable(U0::default());
