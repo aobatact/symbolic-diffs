@@ -87,14 +87,7 @@ impl<Dim: DimMarker, Coefficient: Display + From<Degree>, Degree: Clone> Display
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone
-        + Zero
-        + One
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + From<Degree>
-        + Any
-        + Display,
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + IsLess<N> + Any + Unsigned,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
@@ -137,15 +130,8 @@ where
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone
-        + Zero
-        + One
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + From<Degree>
-        + Any
-        + Display,
-    Dim: IsLess<N> + Any + Unsigned,
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: IsLess<N> + Any + Unsigned + variables::DimMarker,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
@@ -189,14 +175,7 @@ where
 
 impl<Dim, T, Degree> DynamicSymbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone
-        + Zero
-        + One
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + From<Degree>
-        + Any
-        + Display,
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -230,14 +209,7 @@ where
 
 impl<Dim, T, Degree> Symbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone
-        + Zero
-        + One
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + From<Degree>
-        + Any
-        + Display,
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -258,14 +230,7 @@ where
 
 impl<Dim, T, Degree, const D: usize> DynamicSymbol<T, [T; D]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone
-        + Zero
-        + One
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + From<Degree>
-        + Any
-        + Display,
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -300,14 +265,7 @@ where
 
 impl<Dim, T, Degree, const D: usize> Symbol<T, [T; D]> for DimMonomial<Dim, T, Degree>
 where
-    T: Clone
-        + Zero
-        + One
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + From<Degree>
-        + Any
-        + Display,
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -315,6 +273,116 @@ where
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
         debug_assert!(dm < D);
+        if dm == self.dim() && !self.1.is_zero() {
+            DimMonomial(
+                self.0.clone() * T::from(self.1.clone()),
+                self.1.clone() - Degree::one(),
+                self.2,
+            )
+        } else {
+            DimMonomial(T::zero(), Degree::one(), self.2)
+        }
+    }
+}
+
+impl<Dim, T, Degree> DynamicSymbol<T, (usize, T)> for DimMonomial<Dim, T, Degree>
+where
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: DimMarker + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    fn calc_ref(&self, v: &(usize, T)) -> T {
+        if self.2.dim() == v.0 && !self.0.is_zero() {
+            self.0.clone() * v.1.clone().pow(self.1.clone())
+        } else {
+            T::zero()
+        }
+    }
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, (usize, T)> {
+        if dm == self.dim() {
+            if self.1.is_one() {
+                return DynExpr::Const(Const(self.0.clone() * T::from(self.1.clone())));
+            } else if !self.1.is_zero() {
+                return DimMonomial::<Dim, _, _>(
+                    self.0.clone() * T::from(self.1.clone()),
+                    self.1.clone() - Degree::one(),
+                    self.2,
+                )
+                .to_dyn_expr();
+            }
+        }
+        DynExpr::Zero
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T, Degree> Symbol<T, (usize, T)> for DimMonomial<Dim, T, Degree>
+where
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: DimMarker + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    type Derivative = DimMonomial<Dim, T, Degree>;
+
+    fn diff(self, dm: usize) -> <Self as Symbol<T, (usize, T)>>::Derivative {
+        if dm == self.dim() && !self.1.is_zero() {
+            DimMonomial(
+                self.0.clone() * T::from(self.1.clone()),
+                self.1.clone() - Degree::one(),
+                self.2,
+            )
+        } else {
+            DimMonomial(T::zero(), Degree::one(), self.2)
+        }
+    }
+}
+
+impl<Dim, T, Degree> DynamicSymbol<T, T> for DimMonomial<Dim, T, Degree>
+where
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: DimMarker + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    fn calc_ref(&self, v: &T) -> T {
+        if self.2.dim() == 0 && !self.0.is_zero() {
+            self.0.clone() * v.clone().pow(self.1.clone())
+        } else {
+            T::zero()
+        }
+    }
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, T> {
+        if dm == self.dim() {
+            if self.1.is_one() {
+                return DynExpr::Const(Const(self.0.clone() * T::from(self.1.clone())));
+            } else if !self.1.is_zero() {
+                return DimMonomial::<Dim, _, _>(
+                    self.0.clone() * T::from(self.1.clone()),
+                    self.1.clone() - Degree::one(),
+                    self.2,
+                )
+                .to_dyn_expr();
+            }
+        }
+        DynExpr::Zero
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T, Degree> Symbol<T, T> for DimMonomial<Dim, T, Degree>
+where
+    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    Dim: DimMarker + Any,
+    Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
+{
+    type Derivative = DimMonomial<Dim, T, Degree>;
+
+    fn diff(self, dm: usize) -> <Self as Symbol<T, T>>::Derivative {
         if dm == self.dim() && !self.1.is_zero() {
             DimMonomial(
                 self.0.clone() * T::from(self.1.clone()),
@@ -340,10 +408,7 @@ where
         + Sub<Output = T>
         + Mul<Output = T>
         + num_traits::Pow<Degree, Output = T>
-        + Clone
-        + Zero
-        + One
-        + Display
+        + DynamicOut
         + Any,
     Dim: DimMarker + Any,
     DimVariable<Dim>: Symbol<T, [T; N]>,
@@ -371,10 +436,7 @@ where
         + Sub<Output = T>
         + Mul<Output = T>
         + Pow<Degree, Output = T>
-        + Clone
-        + Zero
-        + Display
-        + One
+        + DynamicOut
         + Any,
     Dim: DimMarker + Any,
     DimVariable<Dim>: Symbol<T, [T]>,

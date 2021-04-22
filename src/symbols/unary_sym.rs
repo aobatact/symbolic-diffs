@@ -13,12 +13,12 @@ pub trait UnaryOp {
     }
 
     ///Formats the expression to display.
-    fn format_expression(
+    fn format_expression<Out, In: ?Sized>(
         f: &mut fmt::Formatter<'_>,
-        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        inner: &impl DynamicSymbol<Out, In>,
     ) -> Result<(), fmt::Error> {
         f.write_fmt(format_args!("{}( ", Self::op_name()))?;
-        inner(f)?;
+        inner.fmt(f)?;
         f.write_str(")")
     }
 }
@@ -59,6 +59,20 @@ where
     }
 }
 
+/*
+impl<Op, Sym, Out, In: ?Sized> UnarySym<Op, Sym, Out, In>
+where
+    Op: UnaryOp,
+    Sym: Symbol<Out, In>,
+    Out: DynamicOut + Any,
+    In: Any,
+{
+    fn inner_dyn(self) -> UnarySym<Op, DynExpr<Out, In>, Out, In> {
+        UnarySym::new_with_op(self.op, self.sym.to_dyn_expr())
+    }
+}
+*/
+
 impl<Op, Sym, Out, In: ?Sized> Clone for UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp + Clone,
@@ -93,7 +107,7 @@ where
 impl<Op: UnaryOp, Sym: DynamicSymbol<Out, In>, Out, In: ?Sized> Display
     for UnarySym<Op, Sym, Out, In>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        Op::format_expression(f, |f| self.sym.fmt(f))
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
+        Op::format_expression(f, &self.sym)
     }
 }

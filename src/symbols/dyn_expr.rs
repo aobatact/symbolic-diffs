@@ -12,6 +12,52 @@ pub enum DynExpr<Out, In: ?Sized> {
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
 
+impl<Out, In: ?Sized> DynExpr<Out, In> {
+    pub fn constant(v: Out) -> Self {
+        DynExpr::Const(Const(v))
+    }
+
+    pub fn dynamic(v: impl DynamicSymbol<Out, In>) -> Self {
+        DynExpr::Dynamic(Arc::new(v))
+    }
+
+    pub fn is_dynamic(&self) -> bool {
+        if let DynExpr::Dynamic(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn downcast<T>(&self) -> Option<&T>
+    where
+        T: Any,
+    {
+        match self {
+            DynExpr::Dynamic(d) => d.as_ref().as_any().downcast_ref::<T>(),
+            _ => None,
+        }
+    }
+}
+
+impl<Out: DynamicOut + Any> DynExpr<Out, Out> {
+    pub fn variable<Dim: DimMarker + Any>(d: Dim) -> Self {
+        DynExpr::dynamic(DimVariable::with_dimension(d))
+    }
+}
+
+impl<Out: DynamicOut + Any> DynExpr<Out, [Out]> {
+    pub fn variable_slice<Dim: DimMarker + Any>(d: Dim) -> Self {
+        DynExpr::dynamic(DimVariable::with_dimension(d))
+    }
+}
+
+impl<Out: DynamicOut + Any, const N: usize> DynExpr<Out, [Out; N]> {
+    pub fn variable_array<Dim: DimMarker + Any>(d: Dim) -> Self {
+        DynExpr::dynamic(DimVariable::with_dimension(d))
+    }
+}
+
 impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
     fn clone(&self) -> Self {
         match self {
@@ -57,7 +103,7 @@ impl<Out, In: ?Sized> Default for DynExpr<Out, In> {
 impl<Out, In: ?Sized> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any,
-    Out: Zero + Clone + One + Display,
+    Out: DynamicOut,
 {
     fn calc_ref(&self, i: &In) -> Out {
         match self {
@@ -69,9 +115,7 @@ where
     }
     fn diff_dyn(&self, d: usize) -> DynExpr<Out, In> {
         match self {
-            DynExpr::Zero => DynExpr::Zero,
-            DynExpr::One => DynExpr::Zero,
-            DynExpr::Const(_) => DynExpr::Zero,
+            DynExpr::Zero | DynExpr::One | DynExpr::Const(_) => DynExpr::Zero,
             DynExpr::Dynamic(dy) => dy.diff_dyn(d),
         }
     }
@@ -83,14 +127,11 @@ where
 impl<Out, In: ?Sized> Symbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Display,
+    Out: DynamicOut,
 {
     type Derivative = DynExpr<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
-        match self {
-            DynExpr::Zero | DynExpr::One | DynExpr::Const(_) => DynExpr::Zero,
-            DynExpr::Dynamic(d) => d.diff_dyn(dm).to_dyn_expr(),
-        }
+        self.diff_dyn(dm)
     }
     fn to_dyn_expr(self) -> DynExpr<Out, In> {
         self
@@ -100,27 +141,30 @@ where
 impl<Out, In: ?Sized> Add for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display,
+    Out: DynamicOut + Add<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn add(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
         match (self, e) {
             (DynExpr::Zero, x) | (x, DynExpr::Zero) => x,
+            (DynExpr::One, DynExpr::One) => DynExpr::Const(Const(Out::one() + Out::one())),
             (DynExpr::One, DynExpr::Const(Const(c))) | (DynExpr::Const(Const(c)), DynExpr::One) => {
                 DynExpr::Const(Const(c + Out::one()))
             }
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 + c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(AddSym::new(l, r))),
+            (l, DynExpr::One) => DynExpr::One + l,
+            (l, DynExpr::Const(Const(c2))) => DynExpr::Const(Const(c2)) + l,
+            (l, r) => AddSym::new(l, r).to_dyn_expr(),
         }
     }
 }
 
-impl<Out: Display + Add<Output = Out>, In: ?Sized> Zero for DynExpr<Out, In>
+impl<Out, In: ?Sized> Zero for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display,
+    Out: DynamicOut + Add<Output = Out>,
 {
     fn zero() -> Self {
         DynExpr::One
@@ -137,7 +181,7 @@ where
 impl<Out, In: ?Sized> Sub for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Sub<Output = Out> + Display + Neg<Output = Out>,
+    Out: DynamicOut + Sub<Output = Out> + Neg<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn sub(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -149,7 +193,7 @@ where
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 - c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(SubSym::new(l, r))),
+            (l, r) => SubSym::new(l, r).to_dyn_expr(),
         }
     }
 }
@@ -157,7 +201,7 @@ where
 impl<Out, In: ?Sized> Neg for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Neg<Output = Out> + Display,
+    Out: DynamicOut + Neg<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn neg(self) -> DynExpr<Out, In> {
@@ -165,7 +209,7 @@ where
             DynExpr::Zero => DynExpr::Zero,
             DynExpr::One => DynExpr::Const(Const(-Out::one())),
             DynExpr::Const(Const(c)) => DynExpr::Const(Const(-c)),
-            x => DynExpr::Dynamic(Arc::new(NegSym::new(x))),
+            x => NegSym::new(x).to_dyn_expr(),
         }
     }
 }
@@ -173,7 +217,7 @@ where
 impl<Out, In: ?Sized> Mul for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display + Mul<Output = Out>,
+    Out: DynamicOut + Add<Output = Out> + Mul<Output = Out>,
 {
     type Output = DynExpr<Out, In>;
     fn mul(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -183,7 +227,7 @@ where
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1 * c2))
             }
-            (l, r) => DynExpr::Dynamic(Arc::new(MulSym::new(l, r))),
+            (l, r) => MulSym::new(l, r).to_dyn_expr(),
         }
     }
 }
@@ -191,7 +235,7 @@ where
 impl<Out, In: ?Sized> One for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero + Clone + One + Add<Output = Out> + Display + Mul<Output = Out>,
+    Out: DynamicOut + Add<Output = Out> + Mul<Output = Out>,
 {
     fn one() -> Self {
         DynExpr::One
@@ -207,11 +251,8 @@ where
 impl<Out, In: ?Sized> Div for DynExpr<Out, In>
 where
     Self: Any + Clone,
-    Out: Zero
-        + Clone
-        + One
+    Out: DynamicOut
         + Sub<Output = Out>
-        + Display
         + Neg<Output = Out>
         + Add<Output = Out>
         + Mul<Output = Out>
@@ -249,14 +290,14 @@ macro_rules! as_dyn_expr {
 
 impl<Out, In> ExNumConsts for DynExpr<Out, In>
 where
-    Out: ExNumConsts + Any + Clone + Zero + Display,
+    Out: ExNumConsts + Any + DynamicOut,
 {
     as_dyn_expr!(c e, ln_10, ln_2, log10_e, log10_2, log2_e, log2_10, two);
 }
 
 impl<Out, In> ExNumOps for DynExpr<Out, In>
 where
-    Out: ExNumOps + Any + Clone + Zero + Display,
+    Out: ExNumOps + DynamicOut + Any,
     In: Any + std::clone::Clone,
 {
     as_dyn_expr!(f exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, recip, exp_m1, exp2, ln_1p, log2, log10,);
@@ -264,23 +305,14 @@ where
 
 impl<Out, In> Pow<DynExpr<Out, In>> for DynExpr<Out, In>
 where
-    Out: ExNumOps
-        + Add<Output = Out>
-        + Mul<Output = Out>
-        + Pow<Out, Output = Out>
-        + Clone
-        + Any
-        + Zero
-        + One
-        + Default,
+    Out: ExNumOps + Pow<Out, Output = Out> + Any + Default,
     In: ?Sized + Any,
 {
     type Output = DynExpr<Out, In>;
     fn pow(self, r: DynExpr<Out, In>) -> DynExpr<Out, In> {
         match (self, r) {
-            (_, DynExpr::Zero) => DynExpr::One,
+            (_, DynExpr::Zero) | (DynExpr::One, _) => DynExpr::One,
             (DynExpr::Zero, _) => DynExpr::Zero,
-            (DynExpr::One, _) => DynExpr::One,
             (x, DynExpr::One) => x,
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1.pow(c2)))
@@ -414,5 +446,15 @@ mod tests {
         assert_eq!(24., xy.calc(v1));
         assert_eq!(8., xy.clone().diff(0).calc(v1));
         assert_eq!(-8., xy.diff(1).calc(v1));
+    }
+
+    #[cfg(feature = "typenum")]
+    #[test]
+    fn nested() {
+        let dv = DynExpr::variable(U0::default());
+        let fx = DynExpr::variable(U0::default());
+        let fx3 = fx * DynExpr::constant(DynExpr::constant(3.0));
+        let dv3 = fx3.calc(dv);
+        assert_eq!(3.0, dv3.calc(1.0));
     }
 }

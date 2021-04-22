@@ -1,5 +1,5 @@
 //! Module for operating float-like type.
-//! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type impliments [`ExNumOps`]
+//! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type which impliments [`ExNumOps`].
 //!
 use crate::ops::{AddSym, MulSym, NegSym, SquareSym, SubSym};
 use crate::symbols::*;
@@ -13,7 +13,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Clone + Zero + Neg<Output = Self> + One + ExNumConsts + Any + Display{
+                                Neg<Output = Self> + ExNumConsts + DynamicOut + Any{
             $(
                 fn $m(self) -> Self;
             )*
@@ -117,8 +117,6 @@ macro_rules! FlaotSymbols {
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
-                    //let x : UnarySym<$op, Sym, Out, In> = self.inner().into();
-                    //x.to_expr()
                     self.inner().$me().into()
                 }
             )*
@@ -136,6 +134,22 @@ macro_rules! FloatOps {
             }
         }
 
+        impl<Sym, Out, In> UnarySym<$op, Sym, Out, In>
+        where
+            Sym: Symbol<Out, In>,
+            Out: ExNumOps
+                + Add<Output = Out>
+                + Sub<Output = Out>
+                + Mul<Output = Out>
+                + Div<Output = Out>,
+            In: ?Sized + Any,
+        {
+            #[inline]
+            fn op_dif(self) -> impl Symbol<Out, In> {
+                $ex(self)
+            }
+        }
+
         impl<Sym, Out, In> Symbol<Out, In> for UnarySym<$op, Sym, Out, In>
         where
             Sym: Symbol<Out, In>,
@@ -149,7 +163,7 @@ macro_rules! FloatOps {
             type Derivative = impl Symbol<Out, In>;
             fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
                 let df = self.sym.clone().diff(dm).to_expr();
-                let y = $ex(self);
+                let y = self.op_dif();
                 df * y
             }
         }
@@ -169,7 +183,9 @@ macro_rules! FloatOps {
                 inner.$me()
             }
             fn diff_dyn(&self, dm: usize) -> DynExpr<Out, In> {
-                self.clone().diff(dm).to_dyn_expr()
+                let df = self.sym.clone().diff(dm).to_dyn_expr();
+                let y = self.clone().op_dif();
+                df * y.to_dyn_expr()
             }
             fn as_any(&self) -> &(dyn Any) {
                 self
@@ -270,19 +286,17 @@ where
 }
 
 #[cfg(test)]
-#[cfg(generic_array)]
+#[cfg(feature = "typenum")]
 mod tests {
     use crate::float_ops::*;
-    //use crate::*;
-    use generic_array::*;
     use typenum::*;
 
     #[test]
     fn exp() {
         let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
         let y = x.exp();
-        let v = arr![f32; 1., 1.];
-        let v1 = arr![f32; 2., 3.];
+        let v = [1., 1.];
+        let v1 = [2., 3.];
         assert_eq!(2.0_f32.exp(), y.calc(v));
         assert_eq!(4.0_f32.exp(), y.calc(v1));
         assert_eq!(2.0_f32.exp() * 2.0, y.clone().diff(0).calc(v));
@@ -291,8 +305,8 @@ mod tests {
 
     #[test]
     fn sincos() {
-        let v = arr![f32; 1., 1.];
-        let v1 = arr![f32; 2., 3.];
+        let v = [1., 1.];
+        let v1 = [2., 3.];
         let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
         let xsin = x.sin();
         let xcos = x.cos();
@@ -304,5 +318,14 @@ mod tests {
         assert_eq!(2.0 * xcos.calc(v1), xsin.clone().diff(0).calc(v1));
         assert_eq!(-2.0 * xsin.calc(v), xcos.clone().diff(0).calc(v));
         assert_eq!(-2.0 * xsin.calc(v1), xcos.diff(0).calc(v1));
+    }
+
+    #[test]
+    fn sqrt() {
+        let v = [1., 1.];
+        let x = DimMonomial::<U0, f32, u8>::new(2.0, 1).to_expr();
+        let xsqrt = x.sqrt();
+        assert_eq!(2.0_f32.sqrt(), xsqrt.calc(v));
+        assert_eq!(2.0_f32.sqrt() / 2.0, xsqrt.diff(0).calc(v));
     }
 }

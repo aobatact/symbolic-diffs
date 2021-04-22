@@ -83,6 +83,9 @@ where
     }
 }
 
+pub trait DynamicOut: Clone + Display + Zero + One {}
+impl<T: Clone + Display + Zero + One> DynamicOut for T {}
+
 #[cfg(test)]
 mod tests {
     use crate::*;

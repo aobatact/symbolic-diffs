@@ -93,7 +93,7 @@ where
 impl<Op: BinaryOp, Sym1: DynamicSymbol<Out, In>, Sym2: DynamicSymbol<Out, In>, Out, In: ?Sized>
     Display for BinarySym<Op, Sym1, Sym2, Out, In>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
         Op::format_expression(f, |f| self.sym1.fmt(f), |f| self.sym2.fmt(f))
     }
 }

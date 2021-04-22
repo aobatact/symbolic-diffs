@@ -34,7 +34,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Add<Output = Out> + Any + Zero + One + Clone + Display,
+    Out: Add<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -53,7 +53,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Any + Zero + One + Clone + Display,
+    Out: Add<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -93,7 +93,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Zero + Clone + One + Sub<Output = Out> + Display + Neg<Output = Out> + Any,
+    Out: DynamicOut + Any + Sub<Output = Out> + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     #[inline]
@@ -112,7 +112,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + Any + Zero + Clone + One + Display + Neg<Output = Out>,
+    Out: Sub<Output = Out> + DynamicOut + Any + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -164,7 +164,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In> + Clone,
     Sym2: Symbol<Out, In> + Clone,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -184,7 +184,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<
@@ -249,11 +249,8 @@ where
         + Mul<Output = Out>
         + Div<Output = Out>
         + Neg<Output = Out>
-        + Any
-        + Clone
-        + Zero
-        + One
-        + Display,
+        + DynamicOut
+        + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -314,12 +311,9 @@ where
         + Sub<Output = Out>
         + Mul<Output = Out>
         + Div<Output = Out>
+        + DynamicOut
         + Any
-        + Clone
-        + Zero
-        + One
-        + Neg<Output = Out>
-        + Display,
+        + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     //type Derivative = DivSym<DynExpr<Out, In>, UnarySym<SquareOp, Sym2, Out, In>, Out, In>;
@@ -337,7 +331,7 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + Zero + Clone + One + Display,
+            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + DynamicOut,
             I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
@@ -351,27 +345,18 @@ macro_rules! op_expr {
 op_expr!(Add, AddSym, add, []);
 op_expr!(Sub, SubSym, sub, [Neg]);
 op_expr!(Mul, MulSym, mul, [Add]);
-op_expr!(
-    Div,
-    DivSym,
-    div,
-    [Add, Sub, Mul, Neg],
-    Clone,
-    Zero,
-    One,
-    Display
-);
+op_expr!(Div, DivSym, div, [Add, Sub, Mul, Neg]);
 
 /// [`UnaryOp`] marker for [`-`](`core::ops::Neg`) with [`NegSym`](`crate::ops::NegSym`)
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct NegOp;
 impl UnaryOp for NegOp {
-    fn format_expression(
+    fn format_expression<Out, In: ?Sized>(
         f: &mut fmt::Formatter<'_>,
-        inner: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
+        inner: &impl DynamicSymbol<Out, In>,
     ) -> Result<(), fmt::Error> {
         f.write_str("-(")?;
-        inner(f)?;
+        inner.fmt(f)?;
         f.write_str(")")
     }
 }
@@ -441,7 +426,7 @@ pub type SquareSym<Sym, Out, In> = UnarySym<SquareOp, Sym, Out, In>;
 impl<Sym, Out, In> DynamicSymbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     fn calc_ref(&self, value: &In) -> Out {
@@ -463,7 +448,7 @@ where
 impl<Sym, Out, In> Symbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
@@ -477,7 +462,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + One + Zero + Any + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
@@ -548,26 +533,11 @@ where
     }
 }
 
-/*
-//needs specialization
-impl<L, R, Out, In> Pow<R> for Expr<L, Out, In>
-where
-    L: Symbol<Out, In>,
-    R: Sub<Output = R> + One + Clone,
-    Out: ExNumOps + Pow<R, Output = Out> + Clone,
-{
-    type Output = Expr<UnarySym<UnaryPowOp<R>, L, Out, In>, Out, In>;
-    fn pow(self, r: R) -> Self::Output {
-        UnarySym::new_with_op(UnaryPowOp(r), self.0).to_expr()
-    }
-}
-*/
-
 /// Operation for pow
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + Any + Zero + Clone + One + Display,
+    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
     In: ?Sized + Any,
 {
     pub fn pow_t<Exp>(self, r: Exp) -> Expr<UnarySym<UnaryPowOp<Exp>, Sym, Out, In>, Out, In>

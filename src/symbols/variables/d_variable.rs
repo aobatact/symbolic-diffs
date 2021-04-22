@@ -139,11 +139,63 @@ where
     }
 }
 
+impl<Dim, T> DynamicSymbol<T, (usize, T)> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: DimMarker + Any,
+{
+    fn calc_ref(&self, v: &(usize, T)) -> T {
+        if self.dim() == v.0 {
+            v.1.clone()
+        } else {
+            T::zero()
+        }
+    }
+
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, (usize, T)> {
+        if dm == self.0.dim() {
+            DynExpr::One
+        } else {
+            DynExpr::Zero
+        }
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
+impl<Dim, T> DynamicSymbol<T, T> for DimVariable<Dim>
+where
+    T: Clone + Zero + One,
+    Dim: DimMarker + Any,
+{
+    fn calc_ref(&self, v: &T) -> T {
+        if self.dim() == 0 {
+            v.clone()
+        } else {
+            T::zero()
+        }
+    }
+
+    fn diff_dyn(&self, dm: usize) -> DynExpr<T, T> {
+        if dm == self.0.dim() {
+            DynExpr::One
+        } else {
+            DynExpr::Zero
+        }
+    }
+
+    fn as_any(&self) -> &(dyn Any) {
+        self
+    }
+}
+
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
-    T: Clone + Zero + One + Display + Any,
-    Dim: Unsigned + IsLess<N> + Any,
+    T: DynamicOut + Any,
+    Dim: Unsigned + IsLess<N> + Any + variables::DimMarker,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
 {
@@ -176,7 +228,7 @@ where
 
 impl<Dim, T> Symbol<T, [T]> for DimVariable<Dim>
 where
-    T: Clone + Zero + One + Display + Any,
+    T: DynamicOut + Any,
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
@@ -192,13 +244,43 @@ where
 
 impl<Dim, T, const D: usize> Symbol<T, [T; D]> for DimVariable<Dim>
 where
-    T: Clone + Zero + One + Display + Any,
+    T: DynamicOut + Any,
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
 
     fn diff(self, dm: usize) -> <Self as Symbol<T, [T; D]>>::Derivative {
         debug_assert!(dm < D, "larger dimention {} for {}", dm, D);
+        if dm == self.0.dim() {
+            Const(T::one())
+        } else {
+            Const(T::zero())
+        }
+    }
+}
+
+impl<Dim, T> Symbol<T, T> for DimVariable<Dim>
+where
+    T: DynamicOut + Any,
+    Dim: DimMarker + Any,
+{
+    type Derivative = Const<T>;
+    fn diff(self, dm: usize) -> Self::Derivative {
+        if dm == self.0.dim() {
+            Const(T::one())
+        } else {
+            Const(T::zero())
+        }
+    }
+}
+
+impl<Dim, T> Symbol<T, (usize, T)> for DimVariable<Dim>
+where
+    T: DynamicOut + Any,
+    Dim: DimMarker + Any,
+{
+    type Derivative = Const<T>;
+    fn diff(self, dm: usize) -> Self::Derivative {
         if dm == self.0.dim() {
             Const(T::one())
         } else {
