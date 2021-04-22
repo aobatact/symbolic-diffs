@@ -311,9 +311,8 @@ where
     type Output = DynExpr<Out, In>;
     fn pow(self, r: DynExpr<Out, In>) -> DynExpr<Out, In> {
         match (self, r) {
-            (_, DynExpr::Zero) => DynExpr::One,
+            (_, DynExpr::Zero) | (DynExpr::One, _) => DynExpr::One,
             (DynExpr::Zero, _) => DynExpr::Zero,
-            (DynExpr::One, _) => DynExpr::One,
             (x, DynExpr::One) => x,
             (DynExpr::Const(Const(c1)), DynExpr::Const(Const(c2))) => {
                 DynExpr::Const(Const(c1.pow(c2)))

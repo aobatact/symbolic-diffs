@@ -59,6 +59,7 @@ where
     }
 }
 
+/*
 impl<Op, Sym, Out, In: ?Sized> UnarySym<Op, Sym, Out, In>
 where
     Op: UnaryOp,
@@ -70,6 +71,7 @@ where
         UnarySym::new_with_op(self.op, self.sym.to_dyn_expr())
     }
 }
+*/
 
 impl<Op, Sym, Out, In: ?Sized> Clone for UnarySym<Op, Sym, Out, In>
 where

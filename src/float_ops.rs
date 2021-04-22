@@ -1,5 +1,5 @@
 //! Module for operating float-like type.
-//! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type impliments [`ExNumOps`]
+//! Op structs defined here is used in [`Expr`](crate::Expr) with `Out` type which impliments [`ExNumOps`].
 //!
 use crate::ops::{AddSym, MulSym, NegSym, SquareSym, SubSym};
 use crate::symbols::*;
