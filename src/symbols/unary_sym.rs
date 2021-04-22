@@ -5,7 +5,7 @@ use std::fmt;
 /// Marker for Unary Operation used in [`UnarySym`].
 pub trait UnaryOp {
     ///Returns the op name.
-    fn op_name<'a>() -> &'a str {
+    fn op_name<'a>(&self) -> &'a str {
         let s = std::any::type_name::<Self>();
         debug_assert!(s.ends_with("Op"));
         let op_name = &s[..s.len() - 2];
@@ -14,10 +14,11 @@ pub trait UnaryOp {
 
     ///Formats the expression to display.
     fn format_expression<Out, In: ?Sized>(
+        &self,
         f: &mut fmt::Formatter<'_>,
         inner: &impl DynamicSymbol<Out, In>,
     ) -> Result<(), fmt::Error> {
-        f.write_fmt(format_args!("{}( ", Self::op_name()))?;
+        f.write_fmt(format_args!("{}( ", self.op_name()))?;
         inner.fmt(f)?;
         f.write_str(")")
     }
@@ -108,6 +109,6 @@ impl<Op: UnaryOp, Sym: DynamicSymbol<Out, In>, Out, In: ?Sized> Display
     for UnarySym<Op, Sym, Out, In>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::result::Result<(), core::fmt::Error> {
-        Op::format_expression(f, &self.sym)
+        self.op.format_expression(f, &self.sym)
     }
 }

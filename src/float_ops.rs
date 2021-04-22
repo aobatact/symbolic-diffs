@@ -9,6 +9,24 @@ use core::ops::{Add, Div, Mul, Neg, Sub};
 use num_complex::{Complex32, Complex64};
 use num_traits::{float::FloatConst, pow::Pow};
 
+pub trait BasicNumOps:
+    Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + Neg<Output = Self>
+    + DynamicOut
+{
+}
+impl<T> BasicNumOps for T where
+    T: Add<Output = Self>
+        + Sub<Output = Self>
+        + Mul<Output = Self>
+        + Div<Output = Self>
+        + Neg<Output = Self>
+        + DynamicOut
+{
+}
 macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
@@ -129,7 +147,7 @@ macro_rules! FloatOps {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
         pub struct $op;
         impl UnaryOp for $op {
-            fn op_name<'a>() -> &'a str {
+            fn op_name<'a>(&self) -> &'a str {
                 std::stringify!($me)
             }
         }
@@ -145,7 +163,7 @@ macro_rules! FloatOps {
             In: ?Sized + Any,
         {
             #[inline]
-            fn op_dif(self) -> impl Symbol<Out, In> {
+            pub(crate) fn op_dif(self) -> impl Symbol<Out, In> {
                 $ex(self)
             }
         }

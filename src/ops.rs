@@ -8,7 +8,7 @@ use core::ops::{Add, Div, Mul, Neg, Sub};
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct AddOp;
 impl BinaryOp for AddOp {
-    fn op_symbol() -> Option<&'static str> {
+    fn op_symbol(&self) -> Option<&'static str> {
         Some("+")
     }
 }
@@ -66,7 +66,7 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct SubOp;
 impl BinaryOp for SubOp {
-    fn op_symbol() -> Option<&'static str> {
+    fn op_symbol(&self) -> Option<&'static str> {
         Some("-")
     }
 }
@@ -125,11 +125,12 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct MulOp;
 impl BinaryOp for MulOp {
-    fn op_symbol() -> Option<&'static str> {
+    fn op_symbol(&self) -> Option<&'static str> {
         Some("*")
     }
 
     fn format_expression(
+        &self,
         f: &mut fmt::Formatter<'_>,
         left: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
         right: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
@@ -206,11 +207,12 @@ where
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub struct DivOp;
 impl BinaryOp for DivOp {
-    fn op_symbol() -> Option<&'static str> {
+    fn op_symbol(&self) -> Option<&'static str> {
         Some("/")
     }
 
     fn format_expression(
+        &self,
         f: &mut fmt::Formatter<'_>,
         left: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
         right: impl FnOnce(&mut fmt::Formatter<'_>) -> Result<(), fmt::Error>,
@@ -352,6 +354,7 @@ op_expr!(Div, DivSym, div, [Add, Sub, Mul, Neg]);
 pub struct NegOp;
 impl UnaryOp for NegOp {
     fn format_expression<Out, In: ?Sized>(
+        &self,
         f: &mut fmt::Formatter<'_>,
         inner: &impl DynamicSymbol<Out, In>,
     ) -> Result<(), fmt::Error> {

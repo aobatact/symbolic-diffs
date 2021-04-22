@@ -14,7 +14,7 @@ pub(crate) use symbols::Expr;
 pub use symbols::*;
 
 /// Trait for Symbol using dynamic.
-pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
+pub trait DynamicSymbol<Out, In: ?Sized = Out>: Any + Display {
     /// Calculate the value of this expression.
     /// Use [`calc`](`crate::Symbol::calc`) for owned value for convenience.
     fn calc_ref(&self, value: &In) -> Out;
@@ -26,7 +26,7 @@ pub trait DynamicSymbol<Out, In: ?Sized>: Any + Display {
     fn as_any(&self) -> &(dyn Any);
 }
 
-///Expression symbol for calculating and differentiation.
+///Expression symbol for calculating and staticaly differentiation.
 pub trait Symbol<Out, In: ?Sized>: DynamicSymbol<Out, In> + Clone {
     /// return type for `diff`
     type Derivative: Symbol<Out, In>;
