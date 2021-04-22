@@ -16,7 +16,7 @@ pub trait BasicNumOps:
     + Mul<Output = Self>
     + Div<Output = Self>
     + Neg<Output = Self>
-    + DynamicOut
+    + NumOut
 {
 }
 impl<T> BasicNumOps for T where
@@ -25,7 +25,7 @@ impl<T> BasicNumOps for T where
         + Mul<Output = Self>
         + Div<Output = Self>
         + Neg<Output = Self>
-        + DynamicOut
+        + NumOut
 {
 }
 
@@ -59,7 +59,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: Add<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -78,7 +78,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for AddSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -118,7 +118,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
-    Out: DynamicOut + Any + Sub<Output = Out> + Neg<Output = Out>,
+    Out: NumOut + Any + Sub<Output = Out> + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     #[inline]
@@ -137,7 +137,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for SubSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Sub<Output = Out> + DynamicOut + Any + Neg<Output = Out>,
+    Out: Sub<Output = Out> + NumOut + Any + Neg<Output = Out>,
     In: ?Sized + Any,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
@@ -190,7 +190,7 @@ impl<Sym1, Sym2, Out, In> DynamicSymbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In> + Clone,
     Sym2: Symbol<Out, In> + Clone,
-    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     #[inline]
@@ -210,7 +210,7 @@ impl<Sym1, Sym2, Out, In> Symbol<Out, In> for MulSym<Sym1, Sym2, Out, In>
 where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = AddSym<
@@ -276,7 +276,7 @@ where
         + Mul<Output = Out>
         + Div<Output = Out>
         + Neg<Output = Out>
-        + DynamicOut
+        + NumOut
         + Any,
     In: ?Sized + Any,
 {
@@ -338,7 +338,7 @@ where
         + Sub<Output = Out>
         + Mul<Output = Out>
         + Div<Output = Out>
-        + DynamicOut
+        + NumOut
         + Any
         + Neg<Output = Out>,
     In: ?Sized + Any,
@@ -358,7 +358,7 @@ macro_rules! op_expr {
         where
             L: Symbol<O, I>,
             R: Symbol<O, I>,
-            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + DynamicOut,
+            O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + NumOut,
             I: ?Sized + Any,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;

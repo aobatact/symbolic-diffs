@@ -87,7 +87,7 @@ impl<Dim: DimMarker, Coefficient: Display + From<Degree>, Degree: Clone> Display
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> DynamicSymbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + IsLess<N> + Any + Unsigned,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
@@ -130,7 +130,7 @@ where
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, Degree, N> Symbol<T, GenericArray<T, N>> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: IsLess<N> + Any + Unsigned + variables::DimMarker,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
     N: ArrayLength<T>,
@@ -175,7 +175,7 @@ where
 
 impl<Dim, T, Degree> DynamicSymbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -209,7 +209,7 @@ where
 
 impl<Dim, T, Degree> Symbol<T, [T]> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -230,7 +230,7 @@ where
 
 impl<Dim, T, Degree, const D: usize> DynamicSymbol<T, [T; D]> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -265,7 +265,7 @@ where
 
 impl<Dim, T, Degree, const D: usize> Symbol<T, [T; D]> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -287,7 +287,7 @@ where
 
 impl<Dim, T, Degree> DynamicSymbol<T, (usize, T)> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -321,7 +321,7 @@ where
 
 impl<Dim, T, Degree> Symbol<T, (usize, T)> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -342,7 +342,7 @@ where
 
 impl<Dim, T, Degree> DynamicSymbol<T, T> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -376,7 +376,7 @@ where
 
 impl<Dim, T, Degree> Symbol<T, T> for DimMonomial<Dim, T, Degree>
 where
-    T: DynamicOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
+    T: NumOut + Mul<Output = T> + Pow<Degree, Output = T> + From<Degree> + Any,
     Dim: DimMarker + Any,
     Degree: Clone + Sub<Output = Degree> + Zero + One + PartialEq + Any,
 {
@@ -408,7 +408,7 @@ where
         + Sub<Output = T>
         + Mul<Output = T>
         + num_traits::Pow<Degree, Output = T>
-        + DynamicOut
+        + NumOut
         + Any,
     Dim: DimMarker + Any,
     DimVariable<Dim>: Symbol<T, [T; N]>,
@@ -436,7 +436,7 @@ where
         + Sub<Output = T>
         + Mul<Output = T>
         + Pow<Degree, Output = T>
-        + DynamicOut
+        + NumOut
         + Any,
     Dim: DimMarker + Any,
     DimVariable<Dim>: Symbol<T, [T]>,

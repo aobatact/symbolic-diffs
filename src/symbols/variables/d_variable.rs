@@ -194,7 +194,7 @@ where
 #[cfg(feature = "generic-array1")]
 impl<Dim, T, N> Symbol<T, GenericArray<T, N>> for DimVariable<Dim>
 where
-    T: DynamicOut + Any,
+    T: NumOut + Any,
     Dim: Unsigned + IsLess<N> + Any + variables::DimMarker,
     N: ArrayLength<T>,
     True: Same<<Dim as IsLess<N>>::Output>,
@@ -228,7 +228,7 @@ where
 
 impl<Dim, T> Symbol<T, [T]> for DimVariable<Dim>
 where
-    T: DynamicOut + Any,
+    T: NumOut + Any,
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
@@ -244,7 +244,7 @@ where
 
 impl<Dim, T, const D: usize> Symbol<T, [T; D]> for DimVariable<Dim>
 where
-    T: DynamicOut + Any,
+    T: NumOut + Any,
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
@@ -261,7 +261,7 @@ where
 
 impl<Dim, T> Symbol<T, T> for DimVariable<Dim>
 where
-    T: DynamicOut + Any,
+    T: NumOut + Any,
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;
@@ -276,7 +276,7 @@ where
 
 impl<Dim, T> Symbol<T, (usize, T)> for DimVariable<Dim>
 where
-    T: DynamicOut + Any,
+    T: NumOut + Any,
     Dim: DimMarker + Any,
 {
     type Derivative = Const<T>;

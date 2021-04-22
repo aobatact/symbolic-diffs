@@ -13,7 +13,7 @@ macro_rules! ExNumOpsMacro{
     ( trait [$($m:ident),* $(,)*] ) => {
         /// Trait like [`Float`](`num_traits::float::Float`) but also for `Complex`
         pub trait ExNumOps : Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Div<Output = Self> +
-                                Neg<Output = Self> + ExNumConsts + DynamicOut + Any{
+                                Neg<Output = Self> + ExNumConsts + NumOut + Any{
             $(
                 fn $m(self) -> Self;
             )*

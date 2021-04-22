@@ -70,7 +70,7 @@ where
 
 impl<Out, In, S> DynamicSymbol<Out, In> for Arc<S>
 where
-    Out: DynamicOut + Any,
+    Out: NumOut + Any,
     In: Any + ?Sized,
     S: DynamicSymbol<Out, In>,
 {
@@ -87,7 +87,7 @@ where
 
 impl<Out, In, S> Symbol<Out, In> for Arc<S>
 where
-    Out: DynamicOut + Any,
+    Out: NumOut + Any,
     In: Any + ?Sized,
     S: Symbol<Out, In>,
 {

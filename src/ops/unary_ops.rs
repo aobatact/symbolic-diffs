@@ -80,7 +80,7 @@ pub type SquareSym<Sym, Out, In> = UnarySym<SquareOp, Sym, Out, In>;
 impl<Sym, Out, In> DynamicSymbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     fn calc_ref(&self, value: &In) -> Out {
@@ -102,7 +102,7 @@ where
 impl<Sym, Out, In> Symbol<Out, In> for SquareSym<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     type Derivative = impl Symbol<Out, In>;
@@ -116,7 +116,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     pub fn square(self) -> Expr<UnarySym<SquareOp, Sym, Out, In>, Out, In> {
@@ -191,7 +191,7 @@ where
 impl<Sym, Out, In> Expr<Sym, Out, In>
 where
     Sym: Symbol<Out, In>,
-    Out: Add<Output = Out> + Mul<Output = Out> + DynamicOut + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
     In: ?Sized + Any,
 {
     pub fn pow_t<Exp>(self, r: Exp) -> Expr<UnarySym<UnaryPowOp<Exp>, Sym, Out, In>, Out, In>
