@@ -41,13 +41,12 @@ impl<Out, In: ?Sized> DynExpr<Out, In> {
     }
 }
 
-/*
 impl<Out: NumOut + Any, In : ?Sized> DynExpr<Out, In> {
     pub fn variable<Dim: DimMarker + Any>(d: Dim) -> Self {
         DynExpr::Variable(d.dim())
     }
 }
-*/
+
 
 impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
     fn clone(&self) -> Self {
@@ -459,7 +458,6 @@ mod tests {
     }
 
     #[cfg(feature = "typenum")]
-    #[cfg(feature = "__false__")]
     #[test]
     fn nested() {
         let dv = DynExpr::variable(U0::default());
