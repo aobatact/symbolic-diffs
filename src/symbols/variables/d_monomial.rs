@@ -432,12 +432,7 @@ impl<Dim, T, Degree> From<DimMonomial<Dim, T, Degree>>
         [T],
     >
 where
-    T: Add<Output = T>
-        + Sub<Output = T>
-        + Mul<Output = T>
-        + Pow<Degree, Output = T>
-        + NumOut
-        + Any,
+    T: Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Pow<Degree, Output = T> + NumOut + Any,
     Dim: DimMarker + Any,
     DimVariable<Dim>: Symbol<T, [T]>,
     Degree: Sub<Output = Degree> + One + Clone + Default + Any,

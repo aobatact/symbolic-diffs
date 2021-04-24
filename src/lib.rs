@@ -85,6 +85,40 @@ where
 pub trait NumOut: Clone + Display + Zero + One {}
 impl<T: Clone + Display + Zero + One> NumOut for T {}
 
+pub trait NumsIn<T: NumOut> {
+    fn get_variable(&self, dim: usize) -> T;
+}
+
+impl<T: NumOut> NumsIn<T> for T {
+    fn get_variable(&self, _dim: usize) -> T {
+        self.clone()
+    }
+}
+
+impl<T: NumOut> NumsIn<T> for (usize, T) {
+    fn get_variable(&self, dim: usize) -> T {
+        if self.0 == dim {
+            self.1.clone()
+        } else {
+            T::zero()
+        }
+    }
+}
+
+impl<T: NumOut> NumsIn<T> for [T] {
+    fn get_variable(&self, dim: usize) -> T {
+        self.get(dim)
+            .expect("Input length is smaller than dimension.")
+            .clone()
+    }
+}
+
+impl<T: NumOut, const N: usize> NumsIn<T> for [T; N] {
+    fn get_variable(&self, dim: usize) -> T {
+        self.as_ref().get_variable(dim)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;
