@@ -21,7 +21,7 @@ where
     Sym: DynamicSymbol<Out, [Out]> + Any,
     D1: DimMarker + Clone + Any,
     D2: DimMarker + Clone + Any,
-    Out: DynamicOut + Any,
+    Out: NumOut + Any,
 {
     fn calc_ref(&self, i: &[Out]) -> Out {
         let mut ni = i.to_vec();
@@ -50,7 +50,7 @@ where
     Sym: Symbol<Out, [Out]> + Any,
     D1: DimMarker + Clone + Any,
     D2: DimMarker + Clone + Any,
-    Out: DynamicOut + Any,
+    Out: NumOut + Any,
 {
     type Derivative = DimConverter<Sym::Derivative, D1, D2>;
     fn diff(self, dm: usize) -> Self::Derivative {
