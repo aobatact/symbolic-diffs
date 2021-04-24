@@ -23,31 +23,26 @@ impl<Out, In: ?Sized> Display for EExpr<Out, In> {
     }
 }
 
-impl<T> DynamicSymbol<T> for EExpr<T>
+impl<Out, In> DynamicSymbol<Out, In> for EExpr<Out, In>
 where
-    T: BasicNumOps + Any,
+    Out: BasicNumOps + Any,
+    In: NumsIn<Out> + ?Sized + Any,
 {
-    fn calc_ref(&self, i: &T) -> T {
+    fn calc_ref(&self, i: &In) -> Out {
         match self {
-            EExpr::Zero => T::zero(),
-            EExpr::One => T::one(),
+            EExpr::Zero => Out::zero(),
+            EExpr::One => Out::one(),
             EExpr::Const(c) => c.clone(),
-            EExpr::Variable(d) => {
-                debug_assert_eq!(*d, 0);
-                i.clone()
-            }
+            EExpr::Variable(d) => i.get_variable(*d),
             EExpr::Unary(u) => u.calc_ref(i),
             EExpr::Binary(b) => b.calc_ref(i),
             EExpr::Dyn(d) => d.calc_ref(i),
         }
     }
-    fn diff_dyn(&self, dim: usize) -> DynExpr<T, T> {
+    fn diff_dyn(&self, dim: usize) -> DynExpr<Out, In> {
         match self {
             EExpr::Zero | EExpr::One | EExpr::Const(_) => DynExpr::zero(),
-            EExpr::Variable(d) => {
-                debug_assert_eq!(dim, 0);
-                DynExpr::Zero
-            }
+            EExpr::Variable(d) => DimVariable::with_dimension(*d).diff_dyn(dim),
             EExpr::Unary(u) => u.diff_dyn(dim),
             EExpr::Binary(b) => b.diff_dyn(dim),
             EExpr::Dyn(d) => d.diff_dyn(dim),
@@ -58,12 +53,13 @@ where
     }
 }
 
-impl<T> Symbol<T, T> for EExpr<T>
+impl<Out, In> Symbol<Out, In> for EExpr<Out, In>
 where
-    T: BasicNumOps + Any,
+    Out: BasicNumOps + Any,
+    In: NumsIn<Out> + ?Sized + Any,
 {
-    type Derivative = EExpr<T>;
-    fn diff(self, _: usize) -> EExpr<T> {
+    type Derivative = EExpr<Out, In>;
+    fn diff(self, _: usize) -> EExpr<Out, In> {
         todo!()
     }
 }

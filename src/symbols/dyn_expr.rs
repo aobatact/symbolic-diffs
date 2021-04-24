@@ -9,7 +9,7 @@ pub enum DynExpr<Out, In: ?Sized> {
     Zero,
     One,
     Const(Const<Out>),
-    //Variable(usize),
+    Variable(usize),
     Dynamic(Arc<dyn DynamicSymbol<Out, In>>),
 }
 
@@ -55,7 +55,7 @@ impl<Out: Clone, In: ?Sized> Clone for DynExpr<Out, In> {
             DynExpr::Zero => DynExpr::Zero,
             DynExpr::One => DynExpr::One,
             DynExpr::Const(c) => DynExpr::Const(c.clone()),
-            //DynExpr::Variable(v) => DynExpr::Variable(*v),
+            DynExpr::Variable(v) => DynExpr::Variable(*v),
             DynExpr::Dynamic(d) => DynExpr::Dynamic(d.clone()),
         }
     }
@@ -81,7 +81,7 @@ impl<Out: Display, In: ?Sized> Display for DynExpr<Out, In> {
             DynExpr::Zero => ZeroSym.fmt(fmt),
             DynExpr::One => OneSym.fmt(fmt),
             DynExpr::Const(c) => c.fmt(fmt),
-            //DynExpr::Variable(v) => DimVariable::with_dimension(*v).fmt(fmt),
+            DynExpr::Variable(v) => DimVariable::with_dimension(*v).fmt(fmt),
             DynExpr::Dynamic(d) => d.fmt(fmt),
         }
     }
@@ -104,13 +104,20 @@ where
             DynExpr::Zero => Out::zero(),
             DynExpr::One => Out::one(),
             DynExpr::Const(Const(c)) => c.clone(),
-            //DynExpr::Variable(v) => DimVariable::with_dimension(*v).calc_ref(i),
+            DynExpr::Variable(v) => DimVariable::with_dimension(*v).calc_ref(i),
             DynExpr::Dynamic(d) => d.calc_ref(i),
         }
     }
     fn diff_dyn(&self, d: usize) -> DynExpr<Out, In> {
         match self {
             DynExpr::Zero | DynExpr::One | DynExpr::Const(_) => DynExpr::Zero,
+            DynExpr::Variable(v) => {
+                if *v == d {
+                    DynExpr::One
+                } else {
+                    DynExpr::Zero
+                }
+            }
             DynExpr::Dynamic(dy) => dy.diff_dyn(d),
         }
     }

@@ -26,7 +26,7 @@ impl UnaryOp for NegOp {
 /// let v1 = [6, 3];
 /// assert_eq!(-6,y.calc(v));
 /// assert_eq!(-216,y.calc(v1));
-/// ``` where In: NumsIn<Out> where In: NumsIn<Out> where In: NumsIn<Out>
+/// ```
 pub type NegSym<Sym, Out, In> = UnarySym<NegOp, Sym, Out, In>;
 
 impl<Sym, Out, In> DynamicSymbol<Out, In> for NegSym<Sym, Out, In>
