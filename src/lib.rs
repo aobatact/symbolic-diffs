@@ -8,6 +8,8 @@ use std::sync::Arc;
 pub mod ops;
 pub mod symbols;
 
+#[cfg(feature = "generic-array1")]
+pub use generic_array_support::*;
 pub use ops::float_ops::{ExNumConsts, ExNumOps};
 pub(crate) use symbols::Expr;
 pub use symbols::*;
@@ -116,6 +118,25 @@ impl<T: NumOut> NumsIn<T> for [T] {
 impl<T: NumOut, const N: usize> NumsIn<T> for [T; N] {
     fn get_variable(&self, dim: usize) -> T {
         self.as_ref().get_variable(dim)
+    }
+}
+
+#[cfg(feature = "generic-array1")]
+mod generic_array_support {
+    use crate::*;
+    use generic_array::{ArrayLength, GenericArray};
+    use typenum::marker_traits::Unsigned;
+    use typenum::{
+        marker_traits::Bit,
+        operator_aliases::Le,
+        type_operators::{IsLess, Same},
+        True,
+    };
+
+    impl<T: NumOut, U: ArrayLength<T>> NumsIn<T> for GenericArray<T, U> {
+        fn get_variable(&self, dim: usize) -> T {
+            self.as_ref().get_variable(dim)
+        }
     }
 }
 
