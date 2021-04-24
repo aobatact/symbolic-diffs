@@ -60,7 +60,7 @@ where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
     Out: Add<Output = Out> + NumOut + Any,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
@@ -79,7 +79,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Add<Output = Out> + NumOut + Any,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     type Derivative = AddSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -119,7 +119,7 @@ where
     Sym1: DynamicSymbol<Out, In>,
     Sym2: DynamicSymbol<Out, In>,
     Out: NumOut + Any + Sub<Output = Out> + Neg<Output = Out>,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
@@ -138,7 +138,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Sub<Output = Out> + NumOut + Any + Neg<Output = Out>,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     type Derivative = SubSym<Sym1::Derivative, Sym2::Derivative, Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -191,7 +191,7 @@ where
     Sym1: Symbol<Out, In> + Clone,
     Sym2: Symbol<Out, In> + Clone,
     Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
@@ -211,7 +211,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     type Derivative = AddSym<
         MulSym<Sym1::Derivative, Sym2, Out, In>,
@@ -278,7 +278,7 @@ where
         + Neg<Output = Out>
         + NumOut
         + Any,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     #[inline]
     fn calc_ref(&self, value: &In) -> Out {
@@ -341,7 +341,7 @@ where
         + NumOut
         + Any
         + Neg<Output = Out>,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     //type Derivative = DivSym<DynExpr<Out, In>, UnarySym<SquareOp, Sym2, Out, In>, Out, In>;
     type Derivative = DynExpr<Out, In>;
@@ -359,7 +359,7 @@ macro_rules! op_expr {
             L: Symbol<O, I>,
             R: Symbol<O, I>,
             O: $( $cond<Output = O> + )* $t<Output = O> + $( $cond_nonop + )* Any + NumOut,
-            I: ?Sized + Any,
+            I: ?Sized + Any + NumsIn<O>,
         {
             type Output = Expr<$tsym<L, R, O, I>, O, I>;
             fn $op(self, r: R) -> Self::Output {

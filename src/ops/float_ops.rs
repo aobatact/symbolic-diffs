@@ -113,7 +113,7 @@ macro_rules! FlaotSymbols {
         impl<Sym, Out, In> Expr<Sym, Out, In>
             where Sym: Symbol<Out,In>,
                   Out: ExNumOps,
-                  In: ?Sized + Any
+                  In: ?Sized + Any + NumsIn<Out>
         {
             $(
                 pub fn $me(self) -> Expr<UnarySym<$op, Sym, Out, In>,Out,In> {
@@ -142,7 +142,7 @@ macro_rules! FloatOps {
                 + Sub<Output = Out>
                 + Mul<Output = Out>
                 + Div<Output = Out>,
-            In: ?Sized + Any,
+            In: ?Sized + Any + NumsIn<Out>,
         {
             #[inline]
             pub(crate) fn op_dif(self) -> impl Symbol<Out, In> {
@@ -158,7 +158,7 @@ macro_rules! FloatOps {
                 + Sub<Output = Out>
                 + Mul<Output = Out>
                 + Div<Output = Out>,
-            In: ?Sized + Any,
+            In: ?Sized + Any + NumsIn<Out>,
         {
             type Derivative = impl Symbol<Out, In>;
             fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -176,7 +176,7 @@ macro_rules! FloatOps {
                 + Sub<Output = Out>
                 + Mul<Output = Out>
                 + Div<Output = Out>,
-            In: ?Sized + Any,
+            In: ?Sized + Any + NumsIn<Out>,
         {
             fn calc_ref(&self, v: &In) -> Out {
                 let inner = self.sym.calc_ref(v);
@@ -236,7 +236,7 @@ where
     Sym1: UnaryFloatSymbolEx<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     fn calc_ref(&self, value: &In) -> Out {
         self.sym1.calc_ref(value).pow(self.sym2.calc_ref(value))
@@ -259,7 +259,7 @@ where
     Sym1: UnaryFloatSymbolEx<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     type Derivative = impl Symbol<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -277,7 +277,7 @@ where
     L: UnaryFloatSymbolEx<Out, In>,
     R: Symbol<Out, In>,
     Out: ExNumOps + Pow<Out, Output = Out>,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     type Output = Expr<BinarySym<PowOp, L, R, Out, In>, Out, In>;
     fn pow(self, r: R) -> Self::Output {

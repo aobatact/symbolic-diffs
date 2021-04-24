@@ -93,10 +93,11 @@ impl<Out, In: ?Sized> Default for DynExpr<Out, In> {
     }
 }
 
-impl<Out, In: ?Sized> DynamicSymbol<Out, In> for DynExpr<Out, In>
+impl<Out, In> DynamicSymbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any,
     Out: NumOut,
+    In: ?Sized + NumsIn<Out>,
 {
     fn calc_ref(&self, i: &In) -> Out {
         match self {
@@ -122,6 +123,7 @@ impl<Out, In: ?Sized> Symbol<Out, In> for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut,
+    In: NumsIn<Out>,
 {
     type Derivative = DynExpr<Out, In>;
     fn diff(self, dm: usize) -> <Self as Symbol<Out, In>>::Derivative {
@@ -136,6 +138,7 @@ impl<Out, In: ?Sized> Add for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut + Add<Output = Out>,
+    In: NumsIn<Out>,
 {
     type Output = DynExpr<Out, In>;
     fn add(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -159,6 +162,7 @@ impl<Out, In: ?Sized> Zero for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut + Add<Output = Out>,
+    In: NumsIn<Out>,
 {
     fn zero() -> Self {
         DynExpr::One
@@ -176,6 +180,7 @@ impl<Out, In: ?Sized> Sub for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut + Sub<Output = Out> + Neg<Output = Out>,
+    In: NumsIn<Out>,
 {
     type Output = DynExpr<Out, In>;
     fn sub(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -196,6 +201,7 @@ impl<Out, In: ?Sized> Neg for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut + Neg<Output = Out>,
+    In: NumsIn<Out>,
 {
     type Output = DynExpr<Out, In>;
     fn neg(self) -> DynExpr<Out, In> {
@@ -212,6 +218,7 @@ impl<Out, In: ?Sized> Mul for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut + Add<Output = Out> + Mul<Output = Out>,
+    In: NumsIn<Out>,
 {
     type Output = DynExpr<Out, In>;
     fn mul(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -230,6 +237,7 @@ impl<Out, In: ?Sized> One for DynExpr<Out, In>
 where
     Self: Any + Clone,
     Out: NumOut + Add<Output = Out> + Mul<Output = Out>,
+    In: NumsIn<Out>,
 {
     fn one() -> Self {
         DynExpr::One
@@ -251,6 +259,7 @@ where
         + Add<Output = Out>
         + Mul<Output = Out>
         + Div<Output = Out>,
+    In: NumsIn<Out>,
 {
     type Output = DynExpr<Out, In>;
     fn div(self, e: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -292,7 +301,7 @@ where
 impl<Out, In> ExNumOps for DynExpr<Out, In>
 where
     Out: ExNumOps + NumOut + Any,
-    In: Any + std::clone::Clone,
+    In: Any + NumsIn<Out>,
 {
     as_dyn_expr!(f exp, ln, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh, recip, exp_m1, exp2, ln_1p, log2, log10,);
 }
@@ -300,7 +309,7 @@ where
 impl<Out, In> Pow<DynExpr<Out, In>> for DynExpr<Out, In>
 where
     Out: ExNumOps + Pow<Out, Output = Out> + Any + Default,
-    In: ?Sized + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     type Output = DynExpr<Out, In>;
     fn pow(self, r: DynExpr<Out, In>) -> DynExpr<Out, In> {
@@ -322,8 +331,8 @@ where
 /// Operation for pow
 impl<Out, In> DynExpr<Out, In>
 where
-    Out: Add<Output = Out> + Mul<Output = Out> + Clone + Any,
-    In: ?Sized + Any,
+    Out: Add<Output = Out> + Mul<Output = Out> + NumOut + Any,
+    In: ?Sized + Any + NumsIn<Out>,
 {
     pub fn pow_t<T>(self, r: T) -> DynExpr<Out, In>
     where

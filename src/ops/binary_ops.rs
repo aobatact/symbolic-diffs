@@ -18,7 +18,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: BasicNumOps + Any,
-    In: Any,
+    In: Any + NumsIn<Out>,
 {
     fn calc_ref(&self, i: &In) -> Out {
         match &self.op {
@@ -50,7 +50,7 @@ where
     Sym1: Symbol<Out, In>,
     Sym2: Symbol<Out, In>,
     Out: BasicNumOps + Any,
-    In: Any,
+    In: Any + NumsIn<Out>,
     EExpr<Out, In>: Symbol<Out, In>,
 {
     type Derivative = EExpr<Out, In>;
